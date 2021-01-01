@@ -22,8 +22,7 @@ requests==2.25.0
 scipy==1.5.4
 seaborn==0.11.0
 six==1.15.0
-ta==0.7.0
-TA-Lib @ file:///C:/Users/IPLAB2/Desktop/lab/Factor-Analysis/Factor-Analysis/TA-Lib/TA_Lib-0.4.19-cp37-cp37m-win_amd64.whl
+TA-Lib @ file:///C:/Users/IPLAB2/Documents/GitHub/Factor-Analysis/Factor-Analysis/TA-Lib/TA_Lib-0.4.19-cp37-cp37m-win_amd64.whl
 tornado==6.1
 typing-extensions==3.7.4.3
 urllib3==1.26.2

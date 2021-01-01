@@ -4,7 +4,6 @@ import datetime
 import requests
 import json
 import talib
-import ta
 
 from modules.factor import Factor
 from modules.calendar import Calendar
