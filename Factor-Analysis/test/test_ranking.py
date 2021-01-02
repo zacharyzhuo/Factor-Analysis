@@ -21,7 +21,7 @@ group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 cal = Calendar('TW')
 date = cal.advance_date(date, 0, 's')
-target_rank_df = pd.read_csv('rank.csv')
+target_rank_df = pd.read_csv('./data/rank.csv')
 target_rank_df = target_rank_df[target_rank_df['time'] == 2017930]
 
 print('------------------')

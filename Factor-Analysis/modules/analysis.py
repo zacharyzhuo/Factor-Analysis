@@ -4,7 +4,7 @@ import datetime
 import requests
 import json
 # 禁用科學符號
-pd.set_option('display.float_format',lambda x : '%.2f' % x)
+pd.set_option('display.float_format', lambda x : '%.2f' % x)
 
 class Analysis:
     def __init__(self, start_equity, start_date, end_date, risk_free_rate):
