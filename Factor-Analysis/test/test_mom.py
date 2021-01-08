@@ -4,6 +4,8 @@ import datetime
 import requests
 import json
 import talib
+import sys
+sys.path.append("../")
 
 from modules.factor import Factor
 from modules.calendar import Calendar

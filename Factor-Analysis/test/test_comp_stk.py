@@ -6,6 +6,8 @@ import requests
 import json
 import talib
 import os
+import sys
+sys.path.append("../")
 
 print(os.getcwd())
 
