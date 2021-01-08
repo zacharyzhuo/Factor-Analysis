@@ -18,7 +18,7 @@ from strategys.double_moving_average import DoubleMA
 
 date = '2017-09-30'
 # factor_name = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
-factor_name = ['PE', 'EV_EBITDA', 'EV_S', 'FC_LTD']
+factor_name = ['MOM']
 group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 cal = Calendar('TW')

@@ -88,3 +88,37 @@ class Calendar:
 
         output_date = output_date['date'].strftime('%Y-%m-%d')
         return output_date    
+
+    def get_report_date(self, date):
+        try:
+            report_date_list = ['05-15', '08-14', '11-14', '03-31']
+            country = self.country
+            df = self.date_df
+
+            if type(date) is str:
+                date = datetime.strptime(date, "%Y-%m-%d")
+            year = date.year
+            momth = date.month
+            for i in range(len(report_date_list)):
+                if i == 3 and momth > 3:
+                    report_date_list[i] = str(year+1) + "-" + report_date_list[i]
+                else:
+                    report_date_list[i] = str(year) + "-" + report_date_list[i]
+                report_date_list[i] = datetime.strptime(report_date_list[i], "%Y-%m-%d")
+                if df['date'].iloc[-1] < report_date_list[i]:
+                    report_date_list[i] = None
+                else:
+                    report_date_df = df.loc[df['date'] <= report_date_list[i]]
+                    report_date_list[i] = report_date_df['date'].iloc[-1]
+                
+            report_date_list = list(filter(None, report_date_list))
+            report_date_list.sort()
+            for elm in report_date_list:
+                if date < elm:
+                    output_date = elm
+                    break
+            output_date = output_date.strftime('%Y-%m-%d')
+        except Exception as e:
+            print(e)
+            pass
+        return output_date
