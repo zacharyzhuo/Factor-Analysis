@@ -1,6 +1,20 @@
+import pandas as pd
+import numpy as np
+import datetime
+import requests
+import json
+
 from modules.calendar import Calendar
 from modules.factor import Factor
 from modules.portfolio import Portfolio
+
+
+strategy = [0, 1]                           # 0: BuyAndHold; 1: KTNChannel
+optimization_setting = [0, 1]               # 0: 無變數(or單一變數); 1: 最佳化變數
+weight_setting = [0, 1, 2]                  # 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
+factor_name = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
+group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+position = [5, 10, 15, 30, 90, 150]
 
 
 class MyStrategy:
@@ -18,7 +32,9 @@ class MyStrategy:
         
         self.cal = Calendar('TW')
         self.portfolio = None
+
         self.create_portfolio()
+        self.write_portfolio_performance()
     
     def get_ticker_list(self):
         print('doing get_ticker_list...')
@@ -39,7 +55,6 @@ class MyStrategy:
     def create_portfolio(self):
         print('doing create_portfolio...')
         ticker_list = self.get_ticker_list()
-        print('creating a portfolio and loading ticker list data')
         self.portfolio = Portfolio(self.cal,
                                    self.strategy,
                                    self.optimization_setting,
@@ -49,3 +64,26 @@ class MyStrategy:
                                    self.start_date,
                                    self.end_date,
                                    ticker_list)
+    
+    def write_portfolio_performance(self):
+        print('doing write_portfolio_performance...')
+        portfo_df = self.portfolio.portfolio_performance_df
+        portfo_dict = self.portfolio.portfolio_performance_dict
+
+        file_name = ""
+        if self.strategy == 0:
+            file_name += "B&H"
+            path_stra = "buy_and_hold"
+        elif self.strategy == 1:
+            file_name += "KTNC"
+            path_stra = "KTN_channel"
+        file_name = file_name+"_"+str(self.optimization_setting)
+        if self.weight_setting == 0:
+            file_name = file_name+"_"+str(self.weight_setting)
+        file_name = file_name+"_"+self.factor_name+"_"+str(self.group)+"_"+str(self.position)
+
+        path = './portfolio_performance/'+self.factor_name+'/'+path_stra+'/'+file_name
+        print('path: ', path)
+        portfo_df.to_csv(path + '.csv', header=True)
+        with open(path + '.txt', 'w') as file:
+            file.write(json.dumps(portfo_dict))

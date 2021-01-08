@@ -22,7 +22,7 @@ class Analysis:
 
     def read_output_csv(self):
         print('doing read_output_csv()...')
-        self.df = pd.read_csv('./data/result/output.csv')
+        self.df = pd.read_csv('./data/portfolio_performance/output.csv')
 
     def anslysis_portfolio(self):
         print('doing anslysis_portfolio()...')
@@ -93,8 +93,6 @@ class Analysis:
         pofolio_net_profit_df['total_net_profit'] = pofolio_net_profit_df.iloc[:, -5:].sum(axis=1)
         pofolio_net_profit_df = pofolio_net_profit_df.set_index('year')
         print(pofolio_net_profit_df)
-        print('@@@@@')
-        print()
 
         color_list = []
         for i in range(len(pofolio_net_profit_df['total_net_profit'])):
