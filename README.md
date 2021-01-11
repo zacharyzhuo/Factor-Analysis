@@ -1,6 +1,9 @@
 ## 虛擬環境
 ```
+cd C:\Users\IPLAB2\Documents\GitHub\Factor-Analysis
 .\venv\Scripts\activate
+cd Factor-Analysis
+
 source ./venv/bin/activate
 deactivate
 ```

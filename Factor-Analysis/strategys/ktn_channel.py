@@ -9,6 +9,7 @@ class KTNChannel(Strategy):
     ma_len = 20
     band_width = 2
     
+    
     def init(self):
         super().init()
         atr = talib.ATR(self.data.High, self.data.Low, self.data.Close, timeperiod=self.atr_len)
@@ -18,6 +19,7 @@ class KTNChannel(Strategy):
         down_band = self.sma - self.band_width * atr
         self.up_band = self.I(lambda x: up_band, 'up_band')
         self.down_band = self.I(lambda x: down_band, 'down_band')
+
 
     def next(self):
         super().next()

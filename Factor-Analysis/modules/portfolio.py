@@ -27,19 +27,15 @@ class Portfolio:
         self.end_date = end_date
         self.ticker_list = ticker_list
 
-        self.ticker_data_dict = {}
-        self.ticker_equity_dict = {}
-        self.backtest_output_dict = {}
+        self.ticker_weight_dict = {}
         self.portfolio_performance_df = None
         self.portfolio_performance_dict = {}
 
-        self.set_stk_price_of_tickers()
-        self.allocate_equity()
-        self.do_backtesting()
         self.proc_backtest_output()
 
+
     def set_stk_price_of_tickers(self):
-        print('doing set_stk_price_of_tickers...')
+        print('...Portfolio: set_stk_price_of_tickers...')
         start_date = self.start_date.split("-")
         start_date = "".join(start_date)
         end_date = self.end_date.split("-")
@@ -57,58 +53,65 @@ class Portfolio:
             stk_df.set_index("date", inplace=True)
             stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'outstanding_share']
             stk_df = stk_df.drop('outstanding_share', axis=1)
-            stk_df = stk_df.fillna(0).astype(int)
+            # stk_df = stk_df.fillna(0).astype(int)
             output_dict[ticker] = stk_df
-        self.ticker_data_dict = output_dict
-        # print(self.ticker_data_dict)
+        return output_dict
+        # print(output_dict)
     
-    def allocate_equity(self):
-        print('doing allocate_equity...')
+
+    def allocate_weight(self):
+        print('...Portfolio: allocate_weight...')
         if self.weight_setting == 0:
-            each_equity = self.start_equity / len(self.ticker_list)
+            weight = self.start_equity / len(self.ticker_list)
             for ticker in self.ticker_list:
-                self.ticker_equity_dict[ticker] = each_equity
+                self.ticker_weight_dict[ticker] = weight
 
         elif self.weight_setting == 1:
             pass
 
         elif self.weight_setting == 2:
             pass
-        print(self.ticker_equity_dict)
     
+
     def do_backtesting(self):
-        print('doing do_backtesting...')
+        stk_price_dict = self.set_stk_price_of_tickers()
+        self.allocate_weight()
+        print('...Portfolio: do_backtesting...')
+        backtest_output_dict = {}
         for ticker in self.ticker_list:
             if self.strategy == 0:
                 BuyAndHold.set_param(BuyAndHold, self.factor_name, ticker, self.cal)
-                bt = Backtest(self.ticker_data_dict[ticker],
+                bt = Backtest(stk_price_dict[ticker],
                               BuyAndHold,
-                              cash=int(self.ticker_equity_dict[ticker]),
+                              cash=int(self.ticker_weight_dict[ticker]),
                               commission=0.0005,
                               exclusive_orders=True)
             elif self.strategy == 1:
-                bt = Backtest(self.ticker_data_dict[ticker],
+                bt = Backtest(stk_price_dict[ticker],
                               KTNChannel,
-                              cash=int(self.ticker_equity_dict[ticker]),
+                              cash=int(self.ticker_weight_dict[ticker]),
                               commission=0.0005,
                               exclusive_orders=True)
             output = bt.run()
             # bt.plot()
-            self.backtest_output_dict[ticker] = output
+            backtest_output_dict[ticker] = output
             print('Complete backtesting ', ticker)
+        return backtest_output_dict
+
 
     def proc_backtest_output(self):
-        print('proc_backtest_output...')
+        backtest_output_dict = self.do_backtesting()
+        print('...Portfolio: proc_backtest_output...')
         column_name = ['ticker', 'Start', 'End', 'Start Equity', 'Equity Final [$]', 'Net Profit',
                         'Return [%]', 'Return (Ann.) [%]', 'Volatility (Ann.) [%]', 'Sharpe Ratio', 
                         'Max. Drawdown [%]', '# Trades', 'Profit Factor', 'Profit', 'Loss',]
         output_list = []
         output_dict = {}
-        for index, value in self.backtest_output_dict.items():
+        for index, value in backtest_output_dict.items():
             ticker = index
             start = value['Start']
             end = value['End']
-            start_equity = self.ticker_equity_dict[index]
+            start_equity = self.ticker_weight_dict[index]
             final_equity = value['Equity Final [$]']
             net_profit = final_equity - start_equity
             return_pct = value['Return [%]']
@@ -131,7 +134,6 @@ class Portfolio:
             trades_df = value['_trades']
             trades_df['year'] = pd.DatetimeIndex(trades_df['ExitTime']).year
             trades_df = trades_df[['PnL', 'year']]
-            trades_df = trades_df.set_index('year')
             trades_dict = trades_df.to_dict()
             self.portfolio_performance_dict[ticker] = {'equity_curve': equity_curve_dict, 'trades': trades_dict}
 
@@ -141,4 +143,3 @@ class Portfolio:
             output_list.append(temp_list)
         self.portfolio_performance_df = pd.DataFrame(output_list, columns=column_name)
         self.portfolio_performance_df = self.portfolio_performance_df.set_index('ticker')
-        print('complete processing portfolio output')

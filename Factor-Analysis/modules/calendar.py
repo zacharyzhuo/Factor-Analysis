@@ -13,6 +13,7 @@ class Calendar:
         self.country = country
         self.date_df = self.get_all_trade_day()
 
+
     def get_all_trade_day(self):
         payloads = {
             'country': 'TW',
@@ -22,6 +23,7 @@ class Calendar:
         date_df = pd.DataFrame(date_list, columns=['date'])
         date_df['date'] = pd.to_datetime(date_df['date'], format="%Y-%m-%d")
         return date_df
+
 
     def advance_date(self, date, how, freq):
         df = self.date_df
@@ -89,10 +91,10 @@ class Calendar:
         output_date = output_date['date'].strftime('%Y-%m-%d')
         return output_date    
 
+
     def get_report_date(self, date):
         try:
-            report_date_list = ['05-15', '08-14', '11-14', '03-31']
-            country = self.country
+            report_date_list = ['03-31', '05-15', '08-14', '11-14']
             df = self.date_df
 
             if type(date) is str:
@@ -100,17 +102,21 @@ class Calendar:
             year = date.year
             momth = date.month
             for i in range(len(report_date_list)):
-                if i == 3 and momth > 3:
+                # 大於3月 年都+1
+                if i == 0 and momth > 3:
                     report_date_list[i] = str(year+1) + "-" + report_date_list[i]
                 else:
                     report_date_list[i] = str(year) + "-" + report_date_list[i]
                 report_date_list[i] = datetime.strptime(report_date_list[i], "%Y-%m-%d")
+                # 超過Calendar的日期都拿掉
                 if df['date'].iloc[-1] < report_date_list[i]:
                     report_date_list[i] = None
                 else:
+                    # 將report date轉換成最接近calendar上的交易日
                     report_date_df = df.loc[df['date'] <= report_date_list[i]]
                     report_date_list[i] = report_date_df['date'].iloc[-1]
-                
+            
+            # 去掉陣列上空的元素
             report_date_list = list(filter(None, report_date_list))
             report_date_list.sort()
             for elm in report_date_list:
@@ -122,3 +128,31 @@ class Calendar:
             print(e)
             pass
         return output_date
+    
+    
+    def get_report_date_list(self, start_date, end_date):
+        try:
+            report_date_list = ['03-31', '05-15', '08-14', '11-14']
+            df = self.date_df
+            date_list = []
+
+            if type(start_date) is not str:
+                start_date = start_date.strftime('%Y-%m-%d')
+            if type(end_date) is not str:
+                end_date = end_date.strftime('%Y-%m-%d')
+            start_year = int(start_date.split('-')[0])
+            end_year = int(end_date.split('-')[0])
+
+            for year in range(start_year, end_year+1):
+                for report_date in report_date_list:
+                    date = str(year) + '-' + report_date
+                    report_date_df = df.loc[df['date'] <= date]
+                    date = report_date_df['date'].iloc[-1]
+                    date = date.strftime('%Y-%m-%d')
+                    # 需要在給定的期間內才append
+                    if date >= start_date and date <= end_date:
+                        date_list.append(date)
+        except Exception as e:
+            print(e)
+            pass
+        return date_list

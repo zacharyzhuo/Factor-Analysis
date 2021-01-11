@@ -10,6 +10,7 @@ class DoubleMA(Strategy):
     n1 = 20
     n2 = 60
     
+    
     def init(self):
         super().init()
         close = pd.Series(self.data.Close)
@@ -18,6 +19,7 @@ class DoubleMA(Strategy):
         
         self.sma1 = self.I(lambda x: sma1, 'sma1')
         self.sma2 = self.I(lambda x: sma2, 'sma2')
+
 
     def next(self):
         super().next()

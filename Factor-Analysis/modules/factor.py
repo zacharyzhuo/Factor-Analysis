@@ -16,6 +16,7 @@ class Factor:
         self.date = date
         self.factor_df = self.get_factor()
 
+
     def get_factor(self):
         payloads = {
             'date': self.date,
@@ -26,6 +27,7 @@ class Factor:
         df = pd.DataFrame(result)
         return df
     
+
     def rank_factor(self, ascending=None):
         df = self.factor_df
         if ascending == None:
@@ -47,6 +49,7 @@ class Factor:
             else:
                 df_list.append(df.iloc[group_size*i: group_size*(i+1)])
         return df_list
+
 
     def check_nan(self):
         df = self.get_factor()

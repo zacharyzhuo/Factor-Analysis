@@ -11,6 +11,7 @@ class Plot:
             output_list.append(addplot_data)
         return output_list
         
+        
     def plot_candlestick(self, df, addplot_list=None):
         # 设置基本参数
         # type:绘制图形的类型，有candle, renko, ohlc, line等
