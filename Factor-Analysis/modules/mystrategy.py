@@ -43,7 +43,7 @@ class MyStrategy:
         
     
     def _get_ticker_list(self):
-        print('...MyStrategy: _get_ticker_list...')
+        print('...MyStrategy: _get_ticker_list()...')
         date = self.cal.advance_date(self.start_date, 1, 's')
         print('get factor data at ' + date)
         ranking_list = self.fac.rank_factor(self.factor_list[0], date)
@@ -57,7 +57,7 @@ class MyStrategy:
 
     def _create_portfolio(self):
         ticker_list = self._get_ticker_list()
-        print('...MyStrategy: _create_portfolio...')
+        print('...MyStrategy: _create_portfolio()...')
         self.portfolio = Portfolio(self.strategy,
                                 self.optimization_setting,
                                 self.weight_setting,
@@ -71,7 +71,7 @@ class MyStrategy:
     
 
     def _write_portfolio_performance(self):
-        print('...MyStrategy: _write_portfolio_performance...')
+        print('...MyStrategy: _write_portfolio_performance()...')
         portfo_df = self.portfolio.portfolio_performance_df
         portfo_dict = self.portfolio.portfolio_performance_dict
 

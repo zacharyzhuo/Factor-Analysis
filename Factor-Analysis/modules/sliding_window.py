@@ -4,34 +4,31 @@ import datetime
 import requests
 import json
 
-from modules.calendar import Calendar
-from modules.factor import Factor
-from modules.window import Window
+from strategys.buy_and_hold_window import BuyAndHoldWindow
 
 
-portfolio_config = {
-    factor_list = ['GVI', 'MOM'],
-    n_season = 1,
-    group = 1,
-    position = 5,
-    start_date = '2000-01-01',
-    end_date = '2017-12-31',
-}
+# portfolio_config = {
+#     'ticker_list': ['1101'],
+#     'factor_list': ['MOM'],
+#     'n_season': 1,
+#     'group': 1,
+#     'position': 5,
+#     'start_date': '2000-01-01',
+#     'end_date': '2017-12-31',
+# }
 
 class SlidingWindow:
-    def __init__(self, portfolio_config):
+    def __init__(self, portfolio_config, cal, fac):
         self.portfolio_config = portfolio_config
+        self.cal = cal
+        self.fac = fac
+        self.report_date_list = cal.get_report_date_list(portfolio_config['start_date'], portfolio_config['end_date'])
+        self.window_data_dict = {}
+        self._slide_window()
 
-        self.get_ticker_list()
-        self.window = Window(self.portfolio_config)
-    
-    def get_ticker_list(self):
-        cal = Calendar("TW")
-        date = cal.advance_date(self.portfolio_config.start_date, self.portfolio_config.n_season, 's')
-        # 選股濾網可寫在Factor裡面
-        ticker_list = Factor('GVI', date).rank_factor
-        self.portfolio_config['ticker_list'] = ticker_list
-    
-    def set_t1_data(self):
+    def _slide_window(self):
+        print('...SlidingWindow: _slide_window()...')
+        for report_date in self.report_date_list:
+            my_window = BuyAndHoldWindow(self.portfolio_config, report_date, self.cal, self.fac)
+            break
 
-    def set_t2_data(self):

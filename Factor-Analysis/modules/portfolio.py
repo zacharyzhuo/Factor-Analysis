@@ -37,7 +37,7 @@ class Portfolio:
 
 
     def _set_stk_price_of_tickers(self):
-        print('...Portfolio: _set_stk_price_of_tickers...')
+        print('...Portfolio: _set_stk_price_of_tickers()...')
         start_date = self.start_date.split("-")
         start_date = "".join(start_date)
         end_date = self.end_date.split("-")
@@ -62,7 +62,7 @@ class Portfolio:
     
 
     def _set_weight(self):
-        print('...Portfolio: _set_weight...')
+        print('...Portfolio: _set_weight()...')
         if self.weight_setting == 0:
             weight = self.start_equity / len(self.ticker_list)
             for ticker in self.ticker_list:
@@ -78,7 +78,7 @@ class Portfolio:
     def _do_backtesting(self):
         stk_price_dict = self._set_stk_price_of_tickers()
         self._set_weight()
-        print('...Portfolio: _do_backtesting...')
+        print('...Portfolio: _do_backtesting()...')
         backtest_output_dict = {}
         for ticker in self.ticker_list:
             if self.strategy == 0:
@@ -103,7 +103,7 @@ class Portfolio:
 
     def _proc_backtest_output(self):
         backtest_output_dict = self._do_backtesting()
-        print('...Portfolio: _proc_backtest_output...')
+        print('...Portfolio: _proc_backtest_output()...')
         column_name = ['ticker', 'Start', 'End', 'Start Equity', 'Equity Final [$]', 'Net Profit',
                         'Return [%]', 'Return (Ann.) [%]', 'Volatility (Ann.) [%]', 'Sharpe Ratio', 
                         'Max. Drawdown [%]', '# Trades', 'Profit Factor', 'Profit', 'Loss',]
