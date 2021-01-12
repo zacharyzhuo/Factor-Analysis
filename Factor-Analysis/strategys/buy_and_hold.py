@@ -1,22 +1,17 @@
 import talib
 import requests
 import json
-
 from backtesting import Backtest, Strategy
-from backtesting.lib import crossover
-from backtesting.test import SMA
-
-from modules.factor import Factor
 
 
 server_ip = "http://140.115.87.197:8090/"
 
 class BuyAndHold(Strategy):
-
-    def set_param(self, factor, ticker, cal):
+    def set_param(self, factor, ticker, cal, fac):
         self.factor = factor
         self.ticker = ticker
         self.cal = cal
+        self.fac = fac
 
 
     def init(self):
@@ -36,7 +31,7 @@ class BuyAndHold(Strategy):
                 how = 0
             fac_date = self.cal.advance_date(date, how, 's')
 
-            rank_list = Factor(self.factor, fac_date).rank_factor()
+            rank_list = self.fac.rank_factor(self.factor, fac_date)
             tier_1_ticker_list = rank_list[0]['ticker'].tolist()
 
             if flag == 0 and self.ticker in tier_1_ticker_list:

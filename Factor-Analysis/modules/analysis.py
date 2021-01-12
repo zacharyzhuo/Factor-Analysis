@@ -9,25 +9,26 @@ import matplotlib.pyplot as plt
 
 factor_name_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 position_list = [5, 10, 15, 30, 90, 150]
+risk_free_rate = 0.01
+
 
 class Analysis:
-    def __init__(self, start_equity, start_date, end_date, risk_free_rate):
+    def __init__(self, start_equity, start_date, end_date):
         self.start_equity = start_equity
         self.start_date = start_date
         self.end_date = end_date
-        self.risk_free_rate = risk_free_rate
         
         self.df = None
         self.equtiy_df = None
         self.trades_df = None
-        self.read_output_csv()
-        self.anslysis_portfolio()
-        self.rank_portfolio_return()
-        self.plot_net_profit_years()
+        self._read_output_csv()
+        self._anslysis_portfolio()
+        self._rank_portfolio_return()
+        self._plot_net_profit_years()
 
 
-    def read_output_csv(self):
-        print('...doing read_output_csv()...')
+    def _read_output_csv(self):
+        print('...Analysis: doing _read_output_csv()...')
         factor_name = factor_name_list[4]
         position = str(position_list[2])
         path = './portfolio_performance/'+factor_name+'/buy_and_hold/'
@@ -67,8 +68,8 @@ class Analysis:
         self.trades_df = self.trades_df.set_index('year')
 
 
-    def anslysis_portfolio(self):
-        print('...doing anslysis_portfolio()...')
+    def _anslysis_portfolio(self):
+        print('...Analysis: doing _anslysis_portfolio()...')
         df = self.df
         equity_df = self.equity_df
         porfolio_performance_list = []
@@ -104,7 +105,7 @@ class Analysis:
         porfolio_performance_list.append(standar_error)
 
         # Sharp Ratio
-        sharp_ratio = (df['Return [%]'].mean() - (self.risk_free_rate * 100)) / standar_error
+        sharp_ratio = (df['Return [%]'].mean() - (risk_free_rate * 100)) / standar_error
         porfolio_performance_list.append(sharp_ratio)
 
         column_name = ['Net Profit (%)', 'CAGR (%)', 'MDD (%)', 'Profit Factor', 'Standar Error', 'Sharp Ratio']
@@ -113,8 +114,8 @@ class Analysis:
         print(porfolio_performance_df.T)
 
 
-    def rank_portfolio_return(self):
-        print('...doing rank_portfolio_return()...')
+    def _rank_portfolio_return(self):
+        print('...Analysis: doing _rank_portfolio_return()...')
         df = self.df
         portfolio_return_df = df.sort_values(ascending=False, by='Return [%]')
         portfolio_return_df = portfolio_return_df.reset_index(drop=True)
@@ -122,8 +123,8 @@ class Analysis:
         print(portfolio_return_df)
 
 
-    def plot_net_profit_years(self):
-        print('...doing plot_net_profit_years()...')
+    def _plot_net_profit_years(self):
+        print('...Analysis: doing _plot_net_profit_years()...')
         equity_df = self.equity_df
         trades_df = self.trades_df
 

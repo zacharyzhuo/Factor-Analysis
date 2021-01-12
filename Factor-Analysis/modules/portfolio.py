@@ -3,7 +3,6 @@ import numpy as np
 import datetime
 import requests
 import json
-
 from backtesting import Backtest, Strategy
 
 from strategys.ktn_channel import KTNChannel
@@ -11,31 +10,34 @@ from strategys.buy_and_hold import BuyAndHold
 
 
 server_ip = "http://140.115.87.197:8090/"
+commission = 0.0005
 
 
 class Portfolio:
-    def __init__(self, cal, strategy, optimization_setting, weight_setting, 
-                factor_name, start_equity, start_date, end_date, ticker_list):
-        self.cal = cal
-
+    def __init__(self, strategy, optimization_setting, weight_setting, 
+                factor_list, start_equity, start_date, end_date, ticker_list,
+                cal, fac):
         self.strategy = strategy
         self.optimization_setting = optimization_setting
         self.weight_setting = weight_setting
-        self.factor_name = factor_name
+        self.factor_list = factor_list
         self.start_equity = start_equity
         self.start_date = start_date
         self.end_date = end_date
         self.ticker_list = ticker_list
 
+        self.cal = cal
+        self.fac = fac
+
         self.ticker_weight_dict = {}
         self.portfolio_performance_df = None
         self.portfolio_performance_dict = {}
 
-        self.proc_backtest_output()
+        self._proc_backtest_output()
 
 
-    def set_stk_price_of_tickers(self):
-        print('...Portfolio: set_stk_price_of_tickers...')
+    def _set_stk_price_of_tickers(self):
+        print('...Portfolio: _set_stk_price_of_tickers...')
         start_date = self.start_date.split("-")
         start_date = "".join(start_date)
         end_date = self.end_date.split("-")
@@ -53,14 +55,14 @@ class Portfolio:
             stk_df.set_index("date", inplace=True)
             stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'outstanding_share']
             stk_df = stk_df.drop('outstanding_share', axis=1)
-            # stk_df = stk_df.fillna(0).astype(int)
+            stk_df = stk_df.fillna(0).astype(int)
             output_dict[ticker] = stk_df
         return output_dict
         # print(output_dict)
     
 
-    def allocate_weight(self):
-        print('...Portfolio: allocate_weight...')
+    def _set_weight(self):
+        print('...Portfolio: _set_weight...')
         if self.weight_setting == 0:
             weight = self.start_equity / len(self.ticker_list)
             for ticker in self.ticker_list:
@@ -73,24 +75,24 @@ class Portfolio:
             pass
     
 
-    def do_backtesting(self):
-        stk_price_dict = self.set_stk_price_of_tickers()
-        self.allocate_weight()
-        print('...Portfolio: do_backtesting...')
+    def _do_backtesting(self):
+        stk_price_dict = self._set_stk_price_of_tickers()
+        self._set_weight()
+        print('...Portfolio: _do_backtesting...')
         backtest_output_dict = {}
         for ticker in self.ticker_list:
             if self.strategy == 0:
-                BuyAndHold.set_param(BuyAndHold, self.factor_name, ticker, self.cal)
+                BuyAndHold.set_param(BuyAndHold, self.factor_list[0], ticker, self.cal, self.fac)
                 bt = Backtest(stk_price_dict[ticker],
                               BuyAndHold,
                               cash=int(self.ticker_weight_dict[ticker]),
-                              commission=0.0005,
+                              commission=commission,
                               exclusive_orders=True)
             elif self.strategy == 1:
                 bt = Backtest(stk_price_dict[ticker],
                               KTNChannel,
                               cash=int(self.ticker_weight_dict[ticker]),
-                              commission=0.0005,
+                              commission=commission,
                               exclusive_orders=True)
             output = bt.run()
             # bt.plot()
@@ -99,9 +101,9 @@ class Portfolio:
         return backtest_output_dict
 
 
-    def proc_backtest_output(self):
-        backtest_output_dict = self.do_backtesting()
-        print('...Portfolio: proc_backtest_output...')
+    def _proc_backtest_output(self):
+        backtest_output_dict = self._do_backtesting()
+        print('...Portfolio: _proc_backtest_output...')
         column_name = ['ticker', 'Start', 'End', 'Start Equity', 'Equity Final [$]', 'Net Profit',
                         'Return [%]', 'Return (Ann.) [%]', 'Volatility (Ann.) [%]', 'Sharpe Ratio', 
                         'Max. Drawdown [%]', '# Trades', 'Profit Factor', 'Profit', 'Loss',]
