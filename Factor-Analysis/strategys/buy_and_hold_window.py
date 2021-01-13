@@ -25,11 +25,20 @@ class BuyAndHoldWindow:
         self._set_t2(t1_config)
     
     def _set_t1(self):
+        portfolio_config = self.portfolio_config
         t1_config = {}
         t1_config['start_date'] = self.cal.get_report_date(self.report_date, -1)
         t1_config['end_date'] = self.report_date
         t1_config['ticker_list'] = self.portfolio_config['ticker_list']
-        # print(t1_config)
+
+        if portfolio_config['if_first'] == True:
+            signal_dict = {}
+            for ticker in t1_config['ticker_list']:
+                signal_dict[ticker] = 0
+            t1_config['signal'] = signal_dict
+        # else:
+
+        print(t1_config)
         return t1_config
 
     def _set_t2(self, t1_config):
@@ -41,5 +50,6 @@ class BuyAndHoldWindow:
 
         group_list = self.fac.rank_factor(portfolio_config['factor_list'][0], t2_config['start_date'])
         rank_list = group_list[portfolio_config['group'] - 1]['ticker'].tolist()
-        print(rank_list)
+
+        # print(rank_list)
         print(t2_config)

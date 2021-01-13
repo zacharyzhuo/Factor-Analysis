@@ -46,11 +46,11 @@ class MyStrategy:
         print('...MyStrategy: _get_ticker_list()...')
         date = self.cal.advance_date(self.start_date, 1, 's')
         print('get factor data at ' + date)
-        ranking_list = self.fac.rank_factor(self.factor_list[0], date)
+        group_list = self.fac.rank_factor(self.factor_list[0], date)
         print('get group ' + str(self.group) + ' from ranking list')
-        ticker_group_df = ranking_list[self.group - 1]
+        rank_list = group_list[self.group - 1]
         print('get a ticker list of top ' + str(self.position) + ' from group ' + str(self.group))
-        ticker_list = ticker_group_df['ticker'].iloc[0: self.position].tolist()
+        ticker_list = rank_list['ticker'].iloc[0: self.position].tolist()
         print('ticker_list: ', ticker_list)
         return ticker_list
     

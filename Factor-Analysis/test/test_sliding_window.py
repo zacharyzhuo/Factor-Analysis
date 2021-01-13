@@ -22,6 +22,8 @@ portfolio_config = {
     'position': 5,
     'start_date': '2010-01-01',
     'end_date': '2017-12-31',
+    'if_first': True,
+    'signal': {},
 }
 
 cal = Calendar('TW')
