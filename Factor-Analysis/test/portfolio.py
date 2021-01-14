@@ -5,8 +5,8 @@ import requests
 import json
 from backtesting import Backtest, Strategy
 
-from modules.sliding_window import SlidingWindow
-from strategys.my_backtest import MyBacktest
+from strategys.ktn_channel import KTNChannel
+from strategys.buy_and_hold import BuyAndHold
 
 
 server_ip = "http://140.115.87.197:8090/"
@@ -24,44 +24,21 @@ class Portfolio:
         self.portfolio_performance_df = None
         self.portfolio_performance_dict = {}
 
-        self._create_sliding_window()
-        stk_price_dict = self._get_stk_price()
-        self._set_weight()
-        buy_and_sell_dict = self._proc_signal()
-        backtest_output_dict = self._do_backtesting(stk_price_dict, buy_and_sell_dict)
-        self._proc_backtest_output(backtest_output_dict)
+        self.cal = cal
+        self.fac = fac
+
+        self.ticker_weight_dict = {}
+        self.portfolio_performance_df = None
+        self.portfolio_performance_dict = {}
+
+        self._proc_backtest_output()
 
 
-    def _create_sliding_window(self):
-        print('...Portfolio: _create_sliding_window()...')
-        strategy_config = self.strategy_config
-        self.window_config = {
-            'factor_list': strategy_config['factor_list'],
-            'n_season': strategy_config['n_season'],
-            'group': strategy_config['group'],
-            'position': strategy_config['position'],
-            'start_date': strategy_config['start_date'],
-            'end_date': strategy_config['end_date'],
-            'if_first': True,
-            'ticker_list': self.ticker_list,
-            'signal': {},
-            'weight': {},
-        }
-        sliding_window = SlidingWindow(self.window_config, self.cal, self.fac)
-        self.window_config = sliding_window.window_config
-        self.ticker_list = self.window_config['ticker_list']
-
-
-    def _proc_ticker_list(self):
-        print('...Portfolio: _proc_ticker_list()...')
-
-
-    def _get_stk_price(self):
-        print('...Portfolio: _get_stk_price()...')
-        strategy_config = self.strategy_config
-        start_date = strategy_config['start_date'].split("-")
+    def _set_stk_price_of_tickers(self):
+        print('...Portfolio: _set_stk_price_of_tickers()...')
+        start_date = self.strategy_config['start_date'].split("-")
         start_date = "".join(start_date)
-        end_date = strategy_config['end_date'].split("-")
+        end_date = self.strategy_config['end_date'].split("-")
         end_date = "".join(end_date)
         payloads = {
             'ticker_list': self.ticker_list,
@@ -83,52 +60,37 @@ class Portfolio:
 
     def _set_weight(self):
         print('...Portfolio: _set_weight()...')
-        strategy_config = self.strategy_config
-        if strategy_config['weight_setting'] == 0:
-            weight = strategy_config['start_equity'] / len(self.ticker_list)
+        if self.strategy_config['weight_setting'] == 0:
+            weight = self.strategy_config['start_equity'] / len(self.ticker_list)
             for ticker in self.ticker_list:
-                self.window_config['weight'][ticker] = weight
+                self.ticker_weight_dict[ticker] = weight
 
-        elif strategy_config['weight_setting'] == 1:
+        elif self.strategy_config['weight_setting'] == 1:
             pass
 
-        elif strategy_config['weight_setting'] == 2:
+        elif self.strategy_config['weight_setting'] == 2:
             pass
     
 
-    def _proc_signal(self):
-        print('...Portfolio: _proc_signal()...')
-        signal_dict = self.window_config['signal']
-        buy_and_sell_dict = {}
-        for ticker in self.ticker_list:
-            temp_dict = {}
-            temp_dict['buy_list'] = []
-            temp_dict['sell_list'] = []
-            buy_and_sell_dict[ticker] = temp_dict
-
-        for date, value in signal_dict.items():
-            for ticker, signal in value.items():
-                if signal == 1:
-                    buy_and_sell_dict[ticker]['buy_list'].append(date)
-                elif signal == 3:
-                    buy_and_sell_dict[ticker]['sell_list'].append(date)
-        return buy_and_sell_dict
-
-
-    def _do_backtesting(self, stk_price_dict, buy_and_sell_dict):
+    def _do_backtesting(self):
+        stk_price_dict = self._set_stk_price_of_tickers()
+        self._set_weight()
         print('...Portfolio: _do_backtesting()...')
-        strategy_config = self.strategy_config
         backtest_output_dict = {}
-
-        for ticker, value in buy_and_sell_dict.items():
-            buy_list = value['buy_list']
-            sell_list = value['sell_list']
-            MyBacktest.set_param(MyBacktest, buy_list, sell_list)
-            bt = Backtest(stk_price_dict[ticker],
-                            MyBacktest,
-                            cash=int(self.window_config['weight'][ticker]),
-                            commission=commission,
-                            exclusive_orders=True)
+        for ticker in self.ticker_list:
+            if self.strategy_config['strategy'] == 0:
+                BuyAndHold.set_param(BuyAndHold, self.strategy_config['factor_list'][0], ticker, self.cal, self.fac)
+                bt = Backtest(stk_price_dict[ticker],
+                              BuyAndHold,
+                              cash=int(self.ticker_weight_dict[ticker]),
+                              commission=commission,
+                              exclusive_orders=True)
+            elif self.strategy_config['strategy'] == 1:
+                bt = Backtest(stk_price_dict[ticker],
+                              KTNChannel,
+                              cash=int(self.ticker_weight_dict[ticker]),
+                              commission=commission,
+                              exclusive_orders=True)
             output = bt.run()
             # bt.plot()
             backtest_output_dict[ticker] = output
@@ -136,18 +98,19 @@ class Portfolio:
         return backtest_output_dict
 
 
-    def _proc_backtest_output(self, backtest_output_dict):
+    def _proc_backtest_output(self):
+        backtest_output_dict = self._do_backtesting()
         print('...Portfolio: _proc_backtest_output()...')
-        window_config = self.window_config
         column_name = ['ticker', 'Start', 'End', 'Start Equity', 'Equity Final [$]', 'Net Profit',
                         'Return [%]', 'Return (Ann.) [%]', 'Volatility (Ann.) [%]', 'Sharpe Ratio', 
                         'Max. Drawdown [%]', '# Trades', 'Profit Factor', 'Profit', 'Loss',]
         output_list = []
         output_dict = {}
-        for ticker, value in backtest_output_dict.items():
+        for index, value in backtest_output_dict.items():
+            ticker = index
             start = value['Start']
             end = value['End']
-            start_equity = window_config['weight'][ticker]
+            start_equity = self.ticker_weight_dict[index]
             final_equity = value['Equity Final [$]']
             net_profit = final_equity - start_equity
             return_pct = value['Return [%]']

@@ -10,84 +10,59 @@ from modules.portfolio import Portfolio
 
 
 class MyStrategy:
-    def __init__(self, strategy, optimization_setting, weight_setting, factor_list,
-                group, position, start_equity, start_date, end_date):
+    def __init__(self, strategy_config):
         print('----------------------')
-        print('strategy: ', strategy)
-        print('optimization_setting: ', optimization_setting)
-        print('weight_setting: ', weight_setting)
-        print('factor_list: ', factor_list)
-        print('group: ', group)
-        print('position: ', position)
+        print('weight_setting: ', strategy_config['weight_setting'])
+        print('factor_list: ', strategy_config['factor_list'])
+        print('group: ', strategy_config['group'])
+        print('position: ', strategy_config['position'])
         print()
-        print('start_equity: ', start_equity)
-        print('backtesting period: from ' + start_date + ' to ' + end_date)
+        print('start_equity: ', strategy_config['start_equity'])
+        print('backtesting period: from ' + strategy_config['start_date'] + ' to ' + strategy_config['end_date'])
         print('----------------------')
 
-        self.strategy = strategy
-        self.optimization_setting = optimization_setting
-        self.weight_setting = weight_setting
-        self.factor_list = factor_list
-        self.group = group
-        self.position = position
-        self.start_equity = start_equity
-        self.start_date = start_date
-        self.end_date = end_date
+        self.strategy_config = strategy_config
         
         self.cal = Calendar('TW')
-        self.fac = Factor(factor_list)
+        self.fac = Factor(strategy_config['factor_list'])
         self.portfolio = None
 
-        self._create_portfolio()
+        ticker_list = self._get_ticker_list()
+        self._create_portfolio(ticker_list)
         self._write_portfolio_performance()
         
     
     def _get_ticker_list(self):
         print('...MyStrategy: _get_ticker_list()...')
-        date = self.cal.advance_date(self.start_date, 1, 's')
+        strategy_config = self.strategy_config
+        date = self.cal.advance_date(strategy_config['start_date'], 1, 's')
         print('get factor data at ' + date)
-        group_list = self.fac.rank_factor(self.factor_list[0], date)
-        print('get group ' + str(self.group) + ' from ranking list')
-        rank_list = group_list[self.group - 1]
-        print('get a ticker list of top ' + str(self.position) + ' from group ' + str(self.group))
-        ticker_list = rank_list['ticker'].iloc[0: self.position].tolist()
+        group_list = self.fac.rank_factor(strategy_config['factor_list'][0], date)
+        print('get group ' + str(strategy_config['group']) + ' from ranking list')
+        rank_list = group_list[strategy_config['group'] - 1]
+        print('get a ticker list of top ' + str(strategy_config['position']) + ' from group ' + str(strategy_config['group']))
+        ticker_list = rank_list['ticker'].iloc[0: strategy_config['position']].tolist()
         print('ticker_list: ', ticker_list)
         return ticker_list
     
 
-    def _create_portfolio(self):
-        ticker_list = self._get_ticker_list()
+    def _create_portfolio(self, ticker_list):
         print('...MyStrategy: _create_portfolio()...')
-        self.portfolio = Portfolio(self.strategy,
-                                self.optimization_setting,
-                                self.weight_setting,
-                                self.factor_list,
-                                self.start_equity,
-                                self.start_date,
-                                self.end_date,
-                                ticker_list,
-                                self.cal,
-                                self.fac)
+        self.portfolio = Portfolio(self.strategy_config, ticker_list, self.cal, self.fac)
     
 
     def _write_portfolio_performance(self):
         print('...MyStrategy: _write_portfolio_performance()...')
+        strategy_config = self.strategy_config
         portfo_df = self.portfolio.portfolio_performance_df
         portfo_dict = self.portfolio.portfolio_performance_dict
 
         file_name = ""
-        if self.strategy == 0:
-            file_name += "B&H"
-            path_stra = "buy_and_hold"
-        elif self.strategy == 1:
-            file_name += "KTNC"
-            path_stra = "KTN_channel"
-        file_name = file_name+"_"+str(self.optimization_setting)
-        if self.weight_setting == 0:
-            file_name = file_name+"_"+str(self.weight_setting)
-        file_name = file_name+"_"+self.factor_list[0]+"_"+str(self.group)+"_"+str(self.position)
+        if strategy_config['weight_setting'] == 0:
+            file_name = file_name+"_"+str(strategy_config['weight_setting'])
+        file_name = file_name+"_"+strategy_config['factor_list'][0]+"_"+str(strategy_config['group'])+"_"+str(strategy_config['position'])
 
-        path = './portfolio_performance/'+self.factor_list[0]+'/'+path_stra+'/'+file_name
+        path = './portfolio_performance/'+strategy_config['factor_list'][0]+'/'+file_name
         portfo_df.to_csv(path + '.csv', header=True)
         with open(path + '.json', 'w') as file:
             json.dump(portfo_dict, file)
