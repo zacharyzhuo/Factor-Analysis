@@ -1,5 +1,7 @@
 import time
 
+from modules.calendar import Calendar
+from modules.factor import Factor
 from modules.mystrategy import MyStrategy
 from modules.analysis import Analysis
 
@@ -38,16 +40,18 @@ end_date = '2017-12-31'
 start = time.time()
 
 strategy_config = {
-    'weight_setting': weight_setting[0],
     'factor_list': [factor_list[2]],
+    'weight_setting': weight_setting[0],
+    'n_season': n_season[0],
     'group': group[0],
     'position': position[0],
-    'n_season': n_season[0],
     'start_equity': start_equity,
     'start_date': start_date,
     'end_date': end_date,
 }
-my_stra = MyStrategy(strategy_config)
+cal = Calendar('TW')
+fac = Factor(strategy_config['factor_list'])
+my_stra = MyStrategy(strategy_config, cal, fac)
 
 end = time.time()
 print("Execution time: %f second" % (end - start))

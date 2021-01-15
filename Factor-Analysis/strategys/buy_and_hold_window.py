@@ -6,51 +6,82 @@ import json
 
 
 class BuyAndHoldWindow:
-    def __init__(self, window_config, report_date, cal, fac):
-        self.window_config = window_config
-        self.report_date = report_date
-        self.cal = cal
-        self.fac = fac
+    def __init__(self):
+        self.window_config = {}
+        self.report_date = ''
+        self.cal = None
+        self.fac = None
+        self.n_season = 0
 
-        t1_config = self._set_t1()
-        self._set_t2(t1_config)
+    
+    def get_ticker_list(self, strategy_config, cal, fac):
+        print('...BuyAndHoldWindow: get_ticker_list()...')
+        date = cal.advance_date(strategy_config['start_date'], 1, 's')
+        print('get factor data at ' + date)
+
+        factor = strategy_config['factor_list'][0]
+        n_season = strategy_config['n_season']
+        factor_all_date_df = fac.factor_df_dict[factor]
+        factor_df = factor_all_date_df.loc[date].to_frame()
+        if n_season > 1:
+            for i in range(n_season-1):
+                date = cal.advance_date(date, 1, 's')
+                temp_factor_df = factor_all_date_df.loc[date]
+                factor_df = factor_df.join(temp_factor_df)
+            factor_df['mean'] = factor_df.mean(axis=1)
+            factor_df = factor_df['mean']
+        group_list = fac.rank_factor(factor_df, factor)
+
+        print('get group ' + str(strategy_config['group']) + ' from ranking list')
+        rank_list = group_list[strategy_config['group'] - 1]
+        print('get a ticker list of top ' + str(strategy_config['position']) + ' from group ' + str(strategy_config['group']))
+        ticker_list = rank_list['ticker'].iloc[0: strategy_config['position']].tolist()
+        return ticker_list
     
 
     def _set_t1(self):
         print('...BuyAndHoldWindow: _set_t1()...')
         window_config = self.window_config
+        n_season = self.n_season
+        report_date = self.report_date
         t1_config = {}
-        t1_config['start_date'] = self.cal.get_report_date(self.report_date, -1)
-        t1_config['end_date'] = self.report_date
-        t1_config['ticker_list'] = self.window_config['ticker_list']
-        factor_data = {}
-        for factor in window_config['factor_list']:
-            fac_dict = {}
-            for ticker in t1_config['ticker_list']:
-                date = self.cal.advance_date(t1_config['start_date'], 0, 's')
-                factor_value = self.fac.factor_df_dict[factor].loc[date, ticker]
-                fac_dict[ticker] = factor_value
-            factor_data[factor] = fac_dict
-        t1_config['factor_data'] = factor_data
-        # print('t1_config: ', t1_config)
+
+        if report_date.split('-')[1] == '03':
+            how = 1
+        else:
+            how = 0
+        date = self.cal.advance_date(report_date, how, 's')
+        factor = window_config['factor_list'][0]
+        factor_all_date_df = self.fac.factor_df_dict[factor]
+        factor_df = factor_all_date_df.loc[date].to_frame()
+
+        if n_season > 1:
+            for i in range(n_season-1):
+                date = self.cal.advance_date(date, 1, 's')
+                temp_factor_df = factor_all_date_df.loc[date]
+                factor_df = factor_df.join(temp_factor_df)
+
+        t1_config['start_date'] = date
+        t1_config['end_date'] = report_date
+        t1_config['ticker_list'] = window_config['ticker_list']
+        t1_config['factor_df'] = factor_df
+        print('t1_config: ', t1_config)
         return t1_config
 
 
     def _set_t2(self, t1_config):
         print('...BuyAndHoldWindow: _set_t2()...')
         window_config = self.window_config
-        t2_config = {}
-        t2_config['start_date'] = t1_config['end_date']
-        t2_config['end_date'] = self.cal.get_report_date(self.report_date, 1)
+        n_season = self.n_season
+        report_date = self.report_date
+        factor_df = t1_config['factor_df']
+        factor = window_config['factor_list'][0]
         ticker_list = t1_config['ticker_list']
 
-        date = t2_config['start_date']
-        if date.split("-")[1] == "03":
-            how = 1
-        else:
-            how = 0
-        date = self.cal.advance_date(date, how, 's')
-        group_list = self.fac.rank_factor(window_config['factor_list'][0], date)
+        if n_season > 1:
+            factor_df['mean'] = factor_df.mean(axis=1)
+            factor_df = factor_df['mean']
+        group_list = self.fac.rank_factor(factor_df, factor)
         rank_list = group_list[window_config['group'] - 1]['ticker'].tolist()
 
         signal_dict = {}
@@ -62,7 +93,8 @@ class BuyAndHoldWindow:
                     signal_dict[ticker] = 0
             self.window_config['if_first'] = False
         else:
-            for ticker, signal in window_config['signal'][t1_config['start_date']].items():
+            date = self.cal.get_report_date(report_date, -1)
+            for ticker, signal in window_config['signal'][date].items():
                 # 0: None; 1: buy; 2: hold; 3: sell
                 if signal == 0 and ticker in rank_list:
                     signal_dict[ticker] = 1
@@ -80,4 +112,22 @@ class BuyAndHoldWindow:
                     signal_dict[ticker] = 1
                 elif signal == 3 and ticker not in rank_list:
                     signal_dict[ticker] = 0
-        self.window_config['signal'][t2_config['start_date']] = signal_dict
+        self.window_config['signal'][report_date] = signal_dict
+        
+        t2_config = {}
+        t2_config['start_date'] = t1_config['end_date']
+        t2_config['end_date'] = self.cal.get_report_date(report_date, 1)
+        print(t2_config)
+
+
+    def play_window(self, window_config, report_date, cal, fac):
+        print('...BuyAndHoldWindow: play_window()...')
+        self.window_config = window_config
+        self.report_date = report_date
+        self.cal = cal
+        self.fac = fac
+        self.n_season = window_config['n_season']
+
+        t1_config = self._set_t1()
+        self._set_t2(t1_config)
+        return self.window_config

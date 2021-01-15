@@ -4,16 +4,16 @@ import datetime
 import requests
 import json
 
-from modules.calendar import Calendar
-from modules.factor import Factor
+from strategys.buy_and_hold_window import BuyAndHoldWindow
 from modules.portfolio import Portfolio
 
 
 class MyStrategy:
-    def __init__(self, strategy_config):
+    def __init__(self, strategy_config, cal, fac):
         print('----------------------')
-        print('weight_setting: ', strategy_config['weight_setting'])
         print('factor_list: ', strategy_config['factor_list'])
+        print('weight_setting: ', strategy_config['weight_setting'])
+        print('n_season: ', strategy_config['n_season'])
         print('group: ', strategy_config['group'])
         print('position: ', strategy_config['position'])
         print()
@@ -22,11 +22,10 @@ class MyStrategy:
         print('----------------------')
 
         self.strategy_config = strategy_config
-        
-        self.cal = Calendar('TW')
-        self.fac = Factor(strategy_config['factor_list'])
-        self.portfolio = None
+        self.cal = cal
+        self.fac = fac
 
+        self.portfolio = None
         ticker_list = self._get_ticker_list()
         self._create_portfolio(ticker_list)
         self._write_portfolio_performance()
@@ -34,14 +33,8 @@ class MyStrategy:
     
     def _get_ticker_list(self):
         print('...MyStrategy: _get_ticker_list()...')
-        strategy_config = self.strategy_config
-        date = self.cal.advance_date(strategy_config['start_date'], 1, 's')
-        print('get factor data at ' + date)
-        group_list = self.fac.rank_factor(strategy_config['factor_list'][0], date)
-        print('get group ' + str(strategy_config['group']) + ' from ranking list')
-        rank_list = group_list[strategy_config['group'] - 1]
-        print('get a ticker list of top ' + str(strategy_config['position']) + ' from group ' + str(strategy_config['group']))
-        ticker_list = rank_list['ticker'].iloc[0: strategy_config['position']].tolist()
+        my_window = BuyAndHoldWindow()
+        ticker_list = my_window.get_ticker_list(self.strategy_config, self.cal, self.fac)
         print('ticker_list: ', ticker_list)
         return ticker_list
     
@@ -57,10 +50,12 @@ class MyStrategy:
         portfo_df = self.portfolio.portfolio_performance_df
         portfo_dict = self.portfolio.portfolio_performance_dict
 
-        file_name = ""
-        if strategy_config['weight_setting'] == 0:
-            file_name = file_name+"_"+str(strategy_config['weight_setting'])
-        file_name = file_name+"_"+strategy_config['factor_list'][0]+"_"+str(strategy_config['group'])+"_"+str(strategy_config['position'])
+        # e.g. MOM_0_1_1_5
+        file_name = "%s_%s_%s_%s_%s" % (strategy_config['factor_list'][0], 
+                                    str(strategy_config['weight_setting']), 
+                                    str(strategy_config['n_season']), 
+                                    str(strategy_config['group']), 
+                                    str(strategy_config['position']))
 
         path = './portfolio_performance/'+strategy_config['factor_list'][0]+'/'+file_name
         portfo_df.to_csv(path + '.csv', header=True)
