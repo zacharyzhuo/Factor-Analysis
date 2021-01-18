@@ -12,7 +12,7 @@ sys.path.append("../")
 from modules.factor import Factor
 from modules.calendar import Calendar
 from modules.sliding_window import SlidingWindow
-from strategys.buy_and_hold_window import BuyAndHoldWindow
+from strategys.one_factor_window import OneFactorWindow
 
 
 window_config = {
@@ -32,6 +32,6 @@ report_date = '2010-03-31'
 cal = Calendar('TW')
 fac = Factor(window_config['factor_list'])
 
-my_window = BuyAndHoldWindow(window_config, report_date, cal, fac)
+my_window = OneFactorWindow(window_config, report_date, cal, fac)
 ticker_list = my_window.get_ticker_list()
 print(ticker_list)

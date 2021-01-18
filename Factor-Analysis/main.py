@@ -45,24 +45,24 @@ for factor in factor_list:
     fac = Factor([factor])
     for gro in group:
         for pos in position:
-            # try:
-            start = time.time()
-            strategy_config = {
-                'factor_list': [factor],
-                'weight_setting': weight_setting[0],
-                'n_season': n_season[0],
-                'group': gro,
-                'position': pos,
-                'start_equity': start_equity,
-                'start_date': start_date,
-                'end_date': end_date,
-            }
-            my_stra = MyStrategy(strategy_config, cal, fac)
-            end = time.time()
-            print("Execution time: %f second" % (end - start))
-            # except Exception as e:
-            #     print(e)
-            #     pass  
+            try:
+                start = time.time()
+                strategy_config = {
+                    'factor_list': [factor],
+                    'weight_setting': weight_setting[0],
+                    'n_season': n_season[0],
+                    'group': gro,
+                    'position': pos,
+                    'start_equity': start_equity,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                }
+                my_stra = MyStrategy(strategy_config, cal, fac)
+                end = time.time()
+                print("Execution time: %f second" % (end - start))
+            except Exception as e:
+                print(e)
+                pass  
 
 
 # analysis = Analysis(start_equity, start_date, end_date)

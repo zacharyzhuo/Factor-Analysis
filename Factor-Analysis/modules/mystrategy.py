@@ -4,7 +4,6 @@ import datetime
 import requests
 import json
 
-from strategys.buy_and_hold_window import BuyAndHoldWindow
 from modules.portfolio import Portfolio
 
 

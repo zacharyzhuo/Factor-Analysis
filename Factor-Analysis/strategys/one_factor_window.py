@@ -5,7 +5,7 @@ import requests
 import json
 
 
-class BuyAndHoldWindow:
+class OneFactorWindow:
     def __init__(self, window_config, report_date, cal, fac):
         self.window_config = window_config
         self.report_date = report_date
@@ -15,7 +15,7 @@ class BuyAndHoldWindow:
     
 
     def get_ticker_list(self):
-        print('...BuyAndHoldWindow: get_ticker_list()...')
+        print('...OneFactorWindow: get_ticker_list()...')
         window_config = self.window_config
         date = self.cal.advance_date(window_config['start_date'], 1, 's')
         print('get factor data at ' + date)
@@ -41,7 +41,7 @@ class BuyAndHoldWindow:
     
 
     def _set_t1(self):
-        print('...BuyAndHoldWindow: _set_t1()...')
+        print('...OneFactorWindow: _set_t1()...')
         window_config = self.window_config
         n_season = self.n_season
         report_date = self.report_date
@@ -74,7 +74,7 @@ class BuyAndHoldWindow:
 
 
     def _set_t2(self, t1_config):
-        print('...BuyAndHoldWindow: _set_t2()...')
+        print('...OneFactorWindow: _set_t2()...')
         window_config = self.window_config
         n_season = self.n_season
         report_date = self.report_date
@@ -125,7 +125,7 @@ class BuyAndHoldWindow:
     
 
     def play_window(self):
-        print('...BuyAndHoldWindow: play_window()...')
+        print('...OneFactorWindow: play_window()...')
         t1_config = self._set_t1()
         self._set_t2(t1_config)
         return self.window_config
