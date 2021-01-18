@@ -31,7 +31,7 @@ class Analysis:
 
     def _read_output_file(self, factor, weight_setting, n_season, group, position):
         print('...Analysis: doing _read_output_file()...')
-        path = '../portfolio_performance/'+factor+'/'
+        path = './portfolio_performance/'+factor+'/'
         file_name = "%s_%s_%s_%s_%s" % (factor, 
                                     str(weight_setting), 
                                     str(n_season), 
