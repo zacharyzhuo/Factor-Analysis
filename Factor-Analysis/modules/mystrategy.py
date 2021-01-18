@@ -26,22 +26,13 @@ class MyStrategy:
         self.fac = fac
 
         self.portfolio = None
-        ticker_list = self._get_ticker_list()
-        self._create_portfolio(ticker_list)
+        self._create_portfolio()
         self._write_portfolio_performance()
-        
-    
-    def _get_ticker_list(self):
-        print('...MyStrategy: _get_ticker_list()...')
-        my_window = BuyAndHoldWindow()
-        ticker_list = my_window.get_ticker_list(self.strategy_config, self.cal, self.fac)
-        print('ticker_list: ', ticker_list)
-        return ticker_list
     
 
-    def _create_portfolio(self, ticker_list):
+    def _create_portfolio(self):
         print('...MyStrategy: _create_portfolio()...')
-        self.portfolio = Portfolio(self.strategy_config, ticker_list, self.cal, self.fac)
+        self.portfolio = Portfolio(self.strategy_config, self.cal, self.fac)
     
 
     def _write_portfolio_performance(self):

@@ -18,6 +18,6 @@ class SlidingWindow:
     def _slide_window(self):
         print('...SlidingWindow: _slide_window()...')
         for report_date in self.report_date_list:
-            my_window = BuyAndHoldWindow()
-            self.window_config = my_window.play_window(self.window_config, report_date, self.cal, self.fac)
-        print('window_config: ', self.window_config)
+            my_window = BuyAndHoldWindow(self.window_config, report_date, self.cal, self.fac)
+            self.window_config = my_window.play_window()
+        # print('window_config: ', self.window_config)

@@ -7,8 +7,13 @@ import json
 import matplotlib.pyplot as plt
 
 
-factor_name_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
-position_list = [5, 10, 15, 30, 90, 150]
+# factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
+# 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
+# weight_setting = [0, 1, 2]                  
+# n_season = [1, 2]
+group = [1, 2, 3, 4, 5, 6]
+position = [5, 10, 15, 30, 90]
+
 risk_free_rate = 0.01
 
 
@@ -21,19 +26,18 @@ class Analysis:
         self.df = None
         self.equtiy_df = None
         self.trades_df = None
-        self._read_output_csv()
-        self._anslysis_portfolio()
-        self._rank_portfolio_return()
-        self._plot_net_profit_years()
+        # self._read_output_file()
 
 
-    def _read_output_csv(self):
-        print('...Analysis: doing _read_output_csv()...')
-        factor_name = factor_name_list[4]
-        position = str(position_list[2])
-        path = './portfolio_performance/'+factor_name+'/buy_and_hold/'
-        file_name = 'B&H_0_0_'+factor_name+'_1_'+position
-        print('file_name: ', file_name)
+    def _read_output_file(self, factor, weight_setting, n_season, group, position):
+        print('...Analysis: doing _read_output_file()...')
+        path = '../portfolio_performance/'+factor+'/'
+        file_name = "%s_%s_%s_%s_%s" % (factor, 
+                                    str(weight_setting), 
+                                    str(n_season), 
+                                    str(group), 
+                                    str(position))
+        # print('file_name: ', file_name)
         self.df = pd.read_csv(path+file_name+'.csv')
 
         with open(path+file_name+'.json', 'r') as file:
@@ -57,19 +61,36 @@ class Analysis:
         year_list = range(int(self.start_date.split('-')[0]), int(self.end_date.split('-')[0]) + 1)
         self.trades_df = pd.DataFrame(year_list, columns=['year'])
         for ticker, value in trades_dict.items():
+            del value['EntryTime']
             ticker_trades_df = pd.DataFrame(value)
             ticker_trades_df.columns = [ticker, 'year']
-            ticker_trades_df['year'] = ticker_trades_df['year'].astype(int)
+            ticker_trades_df['year'] = ticker_trades_df['year'].apply(lambda x: x.split('-')[0]).astype(int)
             ticker_trades_df = ticker_trades_df.groupby('year').sum()
             self.trades_df = self.trades_df.merge(ticker_trades_df, on='year', how='outer')
 
         self.trades_df['total_net_profit'] = self.trades_df.iloc[:, -5:].sum(axis=1)
-        print("total_net_profit: ", self.trades_df['total_net_profit'].sum())
+        # print("total_net_profit: ", self.trades_df['total_net_profit'].sum())
         self.trades_df = self.trades_df.set_index('year')
+        return file_name
 
 
-    def _anslysis_portfolio(self):
-        print('...Analysis: doing _anslysis_portfolio()...')
+    def analysis_factor_performance(self, factor):
+        weight_setting = 0
+        n_season = 1
+        df_list = []
+        for gro in group:
+            for pos in position:
+                file_name = self._read_output_file(factor, weight_setting, n_season, gro, pos)
+                porfolio_performance_list = self.anslysis_portfolio()
+                porfolio_performance_list.insert(0, file_name)
+                df_list.append(porfolio_performance_list)
+        column_name = ['file_name', 'Net Profit (%)', 'CAGR (%)', 'MDD (%)', 'Profit Factor', 'Standar Error', 'Sharp Ratio']
+        df = pd.DataFrame(df_list, columns=column_name)
+        print(df)
+
+
+    def anslysis_portfolio(self):
+        print('...Analysis: doing anslysis_portfolio()...')
         df = self.df
         equity_df = self.equity_df
         porfolio_performance_list = []
@@ -77,7 +98,7 @@ class Analysis:
         # Net Profit
         final_equity = df['Equity Final [$]'].sum()
         net_profit_rate = (final_equity - self.start_equity) / self.start_equity * 100
-        print("net_profit: ", final_equity - self.start_equity)
+        # print("net_profit: ", final_equity - self.start_equity)
         porfolio_performance_list.append(net_profit_rate)
 
         # CAGR
@@ -97,7 +118,7 @@ class Analysis:
         # Profit Factor
         total_profit = df['Profit'].sum()
         total_loss = df['Loss'].sum()
-        profit_factor = total_profit / total_loss
+        profit_factor = total_profit / total_loss * -1
         porfolio_performance_list.append(profit_factor)
 
         # Standar Error
@@ -106,16 +127,21 @@ class Analysis:
 
         # Sharp Ratio
         sharp_ratio = (df['Return [%]'].mean() - (risk_free_rate * 100)) / standar_error
+        print('Return %: ', df['Return [%]'].mean())
+        print('risk_free_rate: ', risk_free_rate * 100)
+        print('standar_error: ', standar_error)
+        print('sharp_ratio: ', sharp_ratio)
         porfolio_performance_list.append(sharp_ratio)
 
         column_name = ['Net Profit (%)', 'CAGR (%)', 'MDD (%)', 'Profit Factor', 'Standar Error', 'Sharp Ratio']
         porfolio_performance_list = [round(x, 2) for x in porfolio_performance_list]
         porfolio_performance_df = pd.DataFrame([porfolio_performance_list], columns=column_name)
-        print(porfolio_performance_df.T)
+        # print(porfolio_performance_df.T)
+        return porfolio_performance_list
 
 
-    def _rank_portfolio_return(self):
-        print('...Analysis: doing _rank_portfolio_return()...')
+    def rank_portfolio_return(self):
+        print('...Analysis: doing rank_portfolio_return()...')
         df = self.df
         portfolio_return_df = df.sort_values(ascending=False, by='Return [%]')
         portfolio_return_df = portfolio_return_df.reset_index(drop=True)
@@ -123,8 +149,8 @@ class Analysis:
         print(portfolio_return_df)
 
 
-    def _plot_net_profit_years(self):
-        print('...Analysis: doing _plot_net_profit_years()...')
+    def plot_net_profit_years(self):
+        print('...Analysis: doing plot_net_profit_years()...')
         equity_df = self.equity_df
         trades_df = self.trades_df
 

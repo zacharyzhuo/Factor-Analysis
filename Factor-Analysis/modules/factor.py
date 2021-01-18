@@ -12,7 +12,7 @@ group_size = 150
 
 class Factor:
     def __init__(self, factor_list):
-        # 從資料庫抓出來時會按照字母大小排序= =
+        # 從資料庫抓出來時會按照字母A-Z排序= =
         factor_list.sort()
         self.factor_list = factor_list
 
@@ -69,6 +69,7 @@ class Factor:
             if factor not in special_factor:
                 df = df.sort_values(ascending=False, by=factor)
             else:
+                df = df.fillna(-1)
                 df[factor] = df[factor].apply(lambda value: np.nan if value <= 0 else value)
                 df = df.sort_values(ascending=True, by=factor)
         else:

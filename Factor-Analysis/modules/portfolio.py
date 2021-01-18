@@ -14,9 +14,9 @@ commission = 0.0005
 
 
 class Portfolio:
-    def __init__(self, strategy_config, ticker_list, cal, fac):
+    def __init__(self, strategy_config, cal, fac):
         self.strategy_config = strategy_config
-        self.ticker_list = ticker_list
+        self.ticker_list = []
         self.cal = cal
         self.fac = fac
 
@@ -43,7 +43,7 @@ class Portfolio:
             'start_date': strategy_config['start_date'],
             'end_date': strategy_config['end_date'],
             'if_first': True,
-            'ticker_list': self.ticker_list,
+            'ticker_list': [],
             'signal': {},
             'weight': {},
         }
@@ -112,6 +112,7 @@ class Portfolio:
                     buy_and_sell_dict[ticker]['buy_list'].append(date)
                 elif signal == 3:
                     buy_and_sell_dict[ticker]['sell_list'].append(date)
+        # print(buy_and_sell_dict)
         return buy_and_sell_dict
 
 
@@ -121,18 +122,23 @@ class Portfolio:
         backtest_output_dict = {}
 
         for ticker, value in buy_and_sell_dict.items():
-            buy_list = value['buy_list']
-            sell_list = value['sell_list']
-            MyBacktest.set_param(MyBacktest, buy_list, sell_list)
-            bt = Backtest(stk_price_dict[ticker],
-                            MyBacktest,
-                            cash=int(self.window_config['weight'][ticker]),
-                            commission=commission,
-                            exclusive_orders=True)
-            output = bt.run()
-            # bt.plot()
-            backtest_output_dict[ticker] = output
-            print('Complete backtesting ', ticker)
+            try:
+                buy_list = value['buy_list']
+                sell_list = value['sell_list']
+                MyBacktest.set_param(MyBacktest, buy_list, sell_list)
+                bt = Backtest(stk_price_dict[ticker],
+                                MyBacktest,
+                                cash=int(self.window_config['weight'][ticker]),
+                                commission=commission,
+                                exclusive_orders=True)
+                output = bt.run()
+                # bt.plot()
+                backtest_output_dict[ticker] = output
+                print('Complete backtesting ', ticker)
+            except Exception as e:
+                print(e)
+                print('Fail: ', ticker)
+                pass
         return backtest_output_dict
 
 
@@ -167,11 +173,11 @@ class Portfolio:
             equity_curve_df['date'] = equity_curve_df['date'].dt.strftime('%Y-%m-%d')
             equity_curve_df = equity_curve_df.set_index('date')
             equity_curve_dict = equity_curve_df.to_dict()
-            trades_df = value['_trades']
-            # trades_df['year'] = pd.DatetimeIndex(trades_df['ExitTime']).year
-            trades_df['EntryTime'] = trades_df['EntryTime'].dt.strftime('%Y-%m-%d')
-            trades_df['ExitTime'] = trades_df['ExitTime'].dt.strftime('%Y-%m-%d')
 
+            trades_df = value['_trades']
+            if not trades_df.empty:
+                trades_df['EntryTime'] = trades_df['EntryTime'].dt.strftime('%Y-%m-%d')
+                trades_df['ExitTime'] = trades_df['ExitTime'].dt.strftime('%Y-%m-%d')
             trades_df = trades_df[['PnL', 'EntryTime', 'ExitTime']]
             trades_dict = trades_df.to_dict()
             self.portfolio_performance_dict[ticker] = {'equity_curve': equity_curve_dict, 'trades': trades_dict}
