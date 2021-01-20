@@ -2,10 +2,11 @@ import time
 
 from modules.calendar import Calendar
 from modules.factor import Factor
-from modules.mystrategy import MyStrategy
+from modules.my_asset import MyAsset
 from modules.analysis import Analysis
 
-
+# 0: one factor; 1: two factor
+strategy = [0, 1]
 factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 # 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
 weight_setting = [0, 1, 2]                  
@@ -30,6 +31,7 @@ for factor in factor_list:
             try:
                 start = time.time()
                 strategy_config = {
+                    'strategy': strategy[0],
                     'factor_list': [factor],
                     'weight_setting': weight_setting[0],
                     'n_season': n_season[0],
@@ -39,7 +41,7 @@ for factor in factor_list:
                     'start_date': start_date,
                     'end_date': end_date,
                 }
-                my_stra = MyStrategy(strategy_config, cal, fac)
+                my_stra = MyAsset(strategy_config, cal, fac)
                 end = time.time()
                 print("Execution time: %f second" % (end - start))
             except Exception as e:

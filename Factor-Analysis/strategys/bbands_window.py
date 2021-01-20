@@ -4,8 +4,11 @@ import datetime
 import requests
 import json
 
+from strategys.one_factor_window import OneFactorWindow
+from strategys.two_factor_window import TwoFactorWindow
 
-class OneFactorWindow:
+
+class BBandsWindow:
     def __init__(self, window_config, report_date, cal, fac):
         self.window_config = window_config
         self.report_date = report_date
@@ -13,33 +16,25 @@ class OneFactorWindow:
         self.fac = fac
         self.n_season = window_config['n_season']
         self.ticker_list = window_config['ticker_list']
+        self.pick_stk_method = 0
     
 
     def get_ticker_list(self):
-        print('...OneFactorWindow: get_ticker_list()...')
-        window_config = self.window_config
-        date = self.cal.advance_date(window_config['start_date'], 1, 's')
+        print('...BBandsWindow: get_ticker_list()...')
+        if self.pick_stk_method == 0:
+            one_factor_window = OneFactorWindow(self.window_config, self.report_date, self.cal, self.fac)
+            ticker_list = one_factor_window.get_ticker_list()
+        
+        elif self.pick_stk_method == 1:
+            two_factor_window = TwoFactorWindow(self.window_config, self.report_date, self.cal, self.fac)
+            ticker_list = two_factor_window.get_ticker_list()
 
-        factor = window_config['factor_list'][0]
-        factor_all_date_df = self.fac.factor_df_dict[factor]
-        factor_df = factor_all_date_df.loc[date].to_frame()
-        if self.n_season > 0:
-            for i in range(self.n_season):
-                date = self.cal.advance_date(date, 1, 's')
-                temp_factor_df = factor_all_date_df.loc[date]
-                factor_df = factor_df.join(temp_factor_df)
-            factor_df['mean'] = factor_df.mean(axis=1)
-            factor_df = factor_df['mean']
-        group_list = self.fac.rank_factor(factor_df, factor)
-
-        rank_list = group_list[window_config['group'] - 1]
-        ticker_list = rank_list['ticker'].iloc[0: window_config['position']].tolist()
         print('ticker_list: ', ticker_list)
         return ticker_list
     
 
     def _set_t1(self):
-        # print('...OneFactorWindow: _set_t1()...')
+        # print('...BBandsWindow: _set_t1()...')
         window_config = self.window_config
         report_date = self.report_date
         t1_config = {}
@@ -72,7 +67,7 @@ class OneFactorWindow:
 
 
     def _set_t2(self, t1_config):
-        # print('...OneFactorWindow: _set_t2()...')
+        # print('...BBandsWindow: _set_t2()...')
         window_config = self.window_config
         report_date = self.report_date
         factor_df = t1_config['factor_df']
@@ -121,7 +116,7 @@ class OneFactorWindow:
     
 
     def play_window(self):
-        print('...OneFactorWindow: play_window()...')
+        print('...BBandsWindow: play_window()...')
         t1_config = self._set_t1()
         self._set_t2(t1_config)
         return self.window_config

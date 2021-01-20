@@ -14,6 +14,7 @@ from modules.calendar import Calendar
 from modules.sliding_window import SlidingWindow
 from strategys.one_factor_window import OneFactorWindow
 from strategys.two_factor_window import TwoFactorWindow
+from strategys.bbands_window import BBandsWindow
 
 
 window_config = {
@@ -29,14 +30,15 @@ window_config = {
     'signal': {},
     'weight': {},
 }
+
 report_date = '2010-03-31'
 factor_list = window_config['factor_list']
 cal = Calendar('TW')
 fac = Factor(factor_list)
 
 
-my_window = SlidingWindow(window_config, cal, fac)
+# my_window = SlidingWindow(window_config, cal, fac)
 
-# my_window = TwoFactorWindow(window_config, report_date, cal, fac)
-# ticker_list = my_window.get_ticker_list()
-# print(ticker_list)
+my_window = BBandsWindow(window_config, report_date, cal, fac)
+ticker_list = my_window.get_ticker_list()
+print(ticker_list)

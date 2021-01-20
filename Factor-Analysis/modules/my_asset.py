@@ -7,7 +7,7 @@ import json
 from modules.portfolio import Portfolio
 
 
-class MyStrategy:
+class MyAsset:
     def __init__(self, strategy_config, cal, fac):
         print('----------------------')
         print('factor_list: ', strategy_config['factor_list'])
@@ -30,12 +30,12 @@ class MyStrategy:
     
 
     def _create_portfolio(self):
-        print('...MyStrategy: _create_portfolio()...')
+        print('...MyAsset: _create_portfolio()...')
         self.portfolio = Portfolio(self.strategy_config, self.cal, self.fac)
     
 
     def _write_portfolio_performance(self):
-        print('...MyStrategy: _write_portfolio_performance()...')
+        print('...MyAsset: _write_portfolio_performance()...')
         strategy_config = self.strategy_config
         portfo_df = self.portfolio.portfolio_performance_df
         portfo_dict = self.portfolio.portfolio_performance_dict

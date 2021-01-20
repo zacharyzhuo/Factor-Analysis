@@ -47,7 +47,7 @@ class TwoFactorWindow:
     
 
     def _set_t1(self):
-        print('...TwoFactorWindow: _set_t1()...')
+        # print('...TwoFactorWindow: _set_t1()...')
         window_config = self.window_config
         factor_list = window_config['factor_list']
         first_factor = factor_list[0]
@@ -86,7 +86,7 @@ class TwoFactorWindow:
 
 
     def _set_t2(self, t1_config):
-        print('...TwoFactorWindow: _set_t2()...')
+        # print('...TwoFactorWindow: _set_t2()...')
         window_config = self.window_config
         factor_list = window_config['factor_list']
         first_factor = factor_list[0]

@@ -36,6 +36,7 @@ class Portfolio:
         print('...Portfolio: _create_sliding_window()...')
         strategy_config = self.strategy_config
         self.window_config = {
+            'strategy': strategy_config['strategy'],
             'factor_list': strategy_config['factor_list'],
             'n_season': strategy_config['n_season'],
             'group': strategy_config['group'],
@@ -76,7 +77,7 @@ class Portfolio:
             stk_df.set_index("date", inplace=True)
             stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'outstanding_share']
             stk_df = stk_df.drop('outstanding_share', axis=1)
-            stk_df = stk_df.fillna(0).astype(int)
+            stk_df = stk_df.interpolate()
             output_dict[ticker] = stk_df
         return output_dict
     
