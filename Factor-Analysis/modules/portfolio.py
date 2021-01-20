@@ -33,8 +33,8 @@ class Portfolio:
             stk_price_dict = self._get_stk_price()
             self._set_weight()
             self._proc_signal()
-            backtest_output_dict = self._do_backtesting(stk_price_dict)
-            self._proc_backtest_output(backtest_output_dict)
+            backtest_result_dict = self._do_backtesting(stk_price_dict)
+            self._proc_backtest_result(backtest_result_dict)
         else:
             self._create_bbands_strategy()
 
@@ -86,8 +86,8 @@ class Portfolio:
 
         stk_price_dict = self._get_stk_price()
         self._set_weight()
-
-        print(self.window_config)
+        backtest_result_dict = self._do_backtesting(stk_price_dict)
+        self._proc_backtest_result(backtest_result_dict)
 
 
     def _proc_ticker_list(self):
@@ -107,17 +107,17 @@ class Portfolio:
             'date': start_date + "-" + end_date
         }
         response = requests.get(server_ip + "stk/get_ticker_period_stk", params=payloads)
-        output_dict = json.loads(response.text)['result']
+        result_dict = json.loads(response.text)['result']
 
         for ticker in ticker_list:
-            stk_df = pd.DataFrame(output_dict[ticker])
+            stk_df = pd.DataFrame(result_dict[ticker])
             stk_df['date'] = [datetime.datetime.strptime(elm, "%Y-%m-%d") for elm in stk_df['date']]
             stk_df.set_index("date", inplace=True)
             stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'outstanding_share']
             stk_df = stk_df.drop('outstanding_share', axis=1)
             stk_df = stk_df.interpolate()
-            output_dict[ticker] = stk_df
-        return output_dict
+            result_dict[ticker] = stk_df
+        return result_dict
     
 
     def _set_weight(self):
@@ -160,7 +160,7 @@ class Portfolio:
         print('...Portfolio: _do_backtesting()...')
         strategy_config = self.strategy_config
         window_config = self.window_config
-        backtest_output_dict = {}
+        backtest_result_dict = {}
 
         if strategy_config['strategy'] != 2:
             for ticker, value in window_config['buy_and_sell_list'].items():
@@ -173,9 +173,9 @@ class Portfolio:
                                     cash=int(window_config['weight'][ticker]),
                                     commission=commission,
                                     exclusive_orders=True)
-                    output = bt.run()
+                    result = bt.run()
                     # bt.plot()
-                    backtest_output_dict[ticker] = output
+                    backtest_result_dict[ticker] = result
                     print('Complete backtesting ', ticker)
                 except Exception as e:
                     print(e)
@@ -189,26 +189,29 @@ class Portfolio:
                                     cash=int(window_config['weight'][ticker]),
                                     commission=commission,
                                     exclusive_orders=True)
-                    output = bt.run()
+                    result = bt.run()
+                    # print(result)
+                    opt_result = bt.optimize(ma_len=range(5, 50, 5), band_width=list(np.arange(0.1, 2.0, 0.1)))
+                    # print(opt_result)
                     # bt.plot()
-                    backtest_output_dict[ticker] = output
+                    backtest_result_dict[ticker] = opt_result
                     print('Complete backtesting ', ticker)
                 except Exception as e:
                     print(e)
                     print('Fail: ', ticker)
                     pass
-        return backtest_output_dict
+        return backtest_result_dict
 
 
-    def _proc_backtest_output(self, backtest_output_dict):
-        print('...Portfolio: _proc_backtest_output()...')
+    def _proc_backtest_result(self, backtest_result_dict):
+        print('...Portfolio: _proc_backtest_result()...')
         window_config = self.window_config
         column_name = ['ticker', 'Start', 'End', 'Start Equity', 'Equity Final [$]', 'Net Profit',
                         'Return [%]', 'Return (Ann.) [%]', 'Volatility (Ann.) [%]', 'Sharpe Ratio', 
                         'Max. Drawdown [%]', '# Trades', 'Profit Factor', 'Profit', 'Loss',]
-        output_list = []
-        output_dict = {}
-        for ticker, value in backtest_output_dict.items():
+        result_list = []
+        result_dict = {}
+        for ticker, value in backtest_result_dict.items():
             start = value['Start']
             end = value['End']
             start_equity = window_config['weight'][ticker]
@@ -243,6 +246,6 @@ class Portfolio:
             temp_list = [ticker, start, end, start_equity, final_equity, net_profit,
                             return_pct, ann_return_pct, ann_volatility_pct, sharpe_ratio, 
                             mdd_pct, trades, profit_factor, profit, loss]
-            output_list.append(temp_list)
-        self.portfolio_performance_df = pd.DataFrame(output_list, columns=column_name)
+            result_list.append(temp_list)
+        self.portfolio_performance_df = pd.DataFrame(result_list, columns=column_name)
         self.portfolio_performance_df = self.portfolio_performance_df.set_index('ticker')

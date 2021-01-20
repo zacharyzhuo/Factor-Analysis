@@ -46,7 +46,7 @@ class MyAsset:
         else:
             factor_list_file_name = strategy_config['factor_list'][0]
 
-        # e.g. 1_MOM_0_1_1_5 or 2_MOM&GVI_0_1_1_5
+        # e.g. 0_MOM_0_1_1_5 or 1_MOM&GVI_0_1_1_5
         file_name = "%s_%s_%s_%s_%s_%s" % (
                                     str(strategy_config['strategy']),
                                     factor_list_file_name, 

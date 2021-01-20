@@ -1,24 +1,26 @@
 from backtesting import Backtest, Strategy
-from backtesting.lib import crossover
-from backtesting.test import SMA
 from talib import BBANDS
 
 
 class BBands(Strategy):
-    atr_len = 20
     ma_len = 20
     band_width = 2
     
     
     def init(self):
         super().init()
-        up, mid, low = BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+        up_band, mid, down_band = BBANDS(self.data.Close, timeperiod=self.ma_len, nbdevup=self.band_width, nbdevdn=self.band_width, matype=0)
 
+        self.up_band = self.I(lambda x: up_band, 'up_band')
+        self.mid = self.I(lambda x: mid, 'mid')
+        self.down_band = self.I(lambda x: down_band, 'down_band')
 
     def next(self):
         super().next()
-        if self.sma[-1] > self.sma[-2] and self.up_band[-1] <= self.data.High[-1]:
-            self.buy()
-        if self.sma[-1] < self.sma[-2] and self.down_band[-1] >= self.data.Low[-1]:
-            for trade in self.trades:
-                trade.close()
+        if self.data.Close > self.up_band:
+            if not self.position:
+                self.buy()
+        if self.data.Close < self.down_band:
+            if self.position:
+                for trade in self.trades:
+                    trade.close()

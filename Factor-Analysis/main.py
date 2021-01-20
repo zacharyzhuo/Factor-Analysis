@@ -31,7 +31,7 @@ for factor in factor_list:
             try:
                 start = time.time()
                 strategy_config = {
-                    'strategy': strategy[0],
+                    'strategy': strategy[2],
                     'factor_list': [factor],
                     'weight_setting': weight_setting[0],
                     'n_season': n_season[0],

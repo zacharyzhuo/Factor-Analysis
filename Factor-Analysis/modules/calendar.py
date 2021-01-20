@@ -38,7 +38,7 @@ class Calendar:
         selected_date = date_df['date'].iloc[-1]
 
         if freq == 'd':
-            output_date = date_df.iloc[how]
+            result_date = date_df.iloc[how]
 
         elif freq == 'm':
             result_df = pd.DataFrame()
@@ -59,7 +59,7 @@ class Calendar:
                         month_end_df = date_df.loc[date_df['date'] <= dt_end]
                         month_end = month_end_df.iloc[-1]
                         result_df = result_df.append(month_end, ignore_index=True)
-            output_date = result_df.iloc[how]
+            result_date = result_df.iloc[how]
 
         elif freq == 's':
             result_df = pd.DataFrame()
@@ -76,7 +76,7 @@ class Calendar:
                         season_end_df = date_df.loc[date_df['date'] <= dt_end]
                         season_end = season_end_df.iloc[-1]
                         result_df = result_df.append(season_end, ignore_index=True)
-            output_date = result_df.iloc[how]
+            result_date = result_df.iloc[how]
 
         elif freq == 'y':
             result_df = pd.DataFrame()
@@ -88,10 +88,10 @@ class Calendar:
                     year_end_df = date_df.loc[date_df['date'] <= dt_end]
                     year_end = year_end_df.iloc[-1]
                     result_df = result_df.append(year_end, ignore_index=True)
-            output_date = result_df.iloc[how]
+            result_date = result_df.iloc[how]
 
-        output_date = output_date['date'].strftime('%Y-%m-%d')
-        return output_date    
+        result_date = result_date['date'].strftime('%Y-%m-%d')
+        return result_date    
 
     
     def get_report_date_list(self, start_date, end_date):
@@ -129,15 +129,15 @@ class Calendar:
             if type(date) is not str:
                 date = date.strftime('%Y-%m-%d')
             report_date_list = self.get_report_date_list('2000-01-01', '2020-12-31')
-            output_list = []
+            result_list = []
             for report_date in report_date_list:
                 if how < 0:
                     if report_date < date:
-                        output_list.append(report_date)
+                        result_list.append(report_date)
                 else:
                     if report_date >= date:
-                        output_list.append(report_date)
+                        result_list.append(report_date)
         except Exception as e:
             print(e)
             pass
-        return output_list[how]
+        return result_list[how]
