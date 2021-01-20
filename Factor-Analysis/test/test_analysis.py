@@ -22,7 +22,7 @@ server_ip = "http://140.115.87.197:8090/"
 factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 # 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
 weight_setting = [0, 1, 2]                  
-n_season = [1, 2]
+n_season = [0, 1]
 group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 position = [5, 10, 15, 30, 90, 150]
 

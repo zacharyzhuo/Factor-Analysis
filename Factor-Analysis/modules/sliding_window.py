@@ -5,6 +5,7 @@ import requests
 import json
 
 from strategys.one_factor_window import OneFactorWindow
+from strategys.two_factor_window import TwoFactorWindow
 
 
 class SlidingWindow:
@@ -17,7 +18,15 @@ class SlidingWindow:
 
     def _slide_window(self):
         print('...SlidingWindow: _slide_window()...')
-        for report_date in self.report_date_list:
-            my_window = OneFactorWindow(self.window_config, report_date, self.cal, self.fac)
-            self.window_config = my_window.play_window()
-        # print('window_config: ', self.window_config)
+        # one factor strategy
+        if self.window_config['strategy'] == 0:
+            for report_date in self.report_date_list:
+                my_window = OneFactorWindow(self.window_config, report_date, self.cal, self.fac)
+                self.window_config = my_window.play_window()
+        # two factor strategy
+        elif self.window_config['strategy'] == 1:
+            for report_date in self.report_date_list:
+                my_window = TwoFactorWindow(self.window_config, report_date, self.cal, self.fac)
+                self.window_config = my_window.play_window()
+        
+        print('window_config: ', self.window_config)

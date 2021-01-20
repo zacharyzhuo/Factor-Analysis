@@ -13,7 +13,7 @@ group_size = 150
 class Factor:
     def __init__(self, factor_list):
         # 從資料庫抓出來時會按照字母A-Z排序= =
-        factor_list.sort()
+        factor_list = sorted(factor_list)
         self.factor_list = factor_list
 
         all_factor_df = self._get_factor()
@@ -61,7 +61,8 @@ class Factor:
         return factor_df_dict
     
 
-    def rank_factor(self, df, factor, ascending=None):
+    # return_list=False 回傳不分群的df
+    def rank_factor(self, df, factor, return_list=True, ascending=None):
         # print('...Factor: rank_factor()...')
         df = df.reset_index()
         df.columns = ['ticker', factor]
@@ -75,16 +76,22 @@ class Factor:
         else:
             df = df.sort_values(ascending=ascending, by=factor)
         df = df.reset_index(drop=True)
-        count = (df.shape[0] // group_size) + 1
-        df_list = []
-        for i in range(count):
-            if i == 0:
-                df_list.append(df.iloc[:group_size])
-            elif i+1 == count:
-                df_list.append(df.iloc[group_size*i:])
+        if return_list == True:
+            if df.shape[0] > group_size:
+                count = (df.shape[0] // group_size) + 1
+                df_list = []
+                for i in range(count):
+                    if i == 0:
+                        df_list.append(df.iloc[:group_size])
+                    elif i+1 == count:
+                        df_list.append(df.iloc[group_size*i:])
+                    else:
+                        df_list.append(df.iloc[group_size*i: group_size*(i+1)])
             else:
-                df_list.append(df.iloc[group_size*i: group_size*(i+1)])
-        return df_list
+                df_list = [df]
+            return df_list
+        else:
+            return df
 
 
     def check_nan(self, factor, date):

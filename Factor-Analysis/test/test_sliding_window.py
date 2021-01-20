@@ -13,11 +13,13 @@ from modules.factor import Factor
 from modules.calendar import Calendar
 from modules.sliding_window import SlidingWindow
 from strategys.one_factor_window import OneFactorWindow
+from strategys.two_factor_window import TwoFactorWindow
 
 
 window_config = {
-    'factor_list': ['MOM'],
-    'n_season': 1,
+    'strategy': 1,
+    'factor_list': ['PE', 'FC_P'],
+    'n_season': 0,
     'group': 1,
     'position': 5,
     'start_date': '2010-01-01',
@@ -28,10 +30,13 @@ window_config = {
     'weight': {},
 }
 report_date = '2010-03-31'
-
+factor_list = window_config['factor_list']
 cal = Calendar('TW')
-fac = Factor(window_config['factor_list'])
+fac = Factor(factor_list)
 
-my_window = OneFactorWindow(window_config, report_date, cal, fac)
-ticker_list = my_window.get_ticker_list()
-print(ticker_list)
+
+my_window = SlidingWindow(window_config, cal, fac)
+
+# my_window = TwoFactorWindow(window_config, report_date, cal, fac)
+# ticker_list = my_window.get_ticker_list()
+# print(ticker_list)

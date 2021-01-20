@@ -9,7 +9,7 @@ from modules.analysis import Analysis
 factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 # 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
 weight_setting = [0, 1, 2]                  
-n_season = [1, 2]
+n_season = [0, 1]
 group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 position = [5, 10, 15, 30, 90, 150]
 
@@ -20,25 +20,6 @@ position = [5, 10, 15, 30, 90, 150]
 start_equity = 10000000
 start_date = '2010-01-01'
 end_date = '2017-12-31'
-
-
-# strategy_config = {
-#     'factor_list': [factor_list[2]],
-#     'weight_setting': weight_setting[0],
-#     'n_season': n_season[1],
-#     'group': group[0],
-#     'position': position[0],
-#     'start_equity': start_equity,
-#     'start_date': start_date,
-#     'end_date': end_date,
-# }
-# cal = Calendar('TW')
-# fac = Factor(strategy_config['factor_list'])
-
-# start = time.time()
-# my_stra = MyStrategy(strategy_config, cal, fac)
-# end = time.time()
-# print("Execution time: %f second" % (end - start))
 
 
 cal = Calendar('TW')
