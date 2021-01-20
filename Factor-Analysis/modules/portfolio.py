@@ -6,17 +6,21 @@ import json
 from backtesting import Backtest, Strategy
 
 from modules.sliding_window import SlidingWindow
+from strategys.one_factor_window import OneFactorWindow
+from strategys.two_factor_window import TwoFactorWindow
 from strategys.my_backtest import MyBacktest
+from strategys.bbands import BBands
 
 
 server_ip = "http://140.115.87.197:8090/"
 commission = 0.0005
+# 1: one factor; 2: two factor
+pick_ticker_method = [1, 2]
 
 
 class Portfolio:
     def __init__(self, strategy_config, cal, fac):
         self.strategy_config = strategy_config
-        self.ticker_list = []
         self.cal = cal
         self.fac = fac
 
@@ -24,18 +28,21 @@ class Portfolio:
         self.portfolio_performance_df = None
         self.portfolio_performance_dict = {}
 
-        self._create_sliding_window()
-        stk_price_dict = self._get_stk_price()
-        self._set_weight()
-        buy_and_sell_dict = self._proc_signal()
-        backtest_output_dict = self._do_backtesting(stk_price_dict, buy_and_sell_dict)
-        self._proc_backtest_output(backtest_output_dict)
+        if strategy_config['strategy'] != 2:
+            self._create_sliding_window()
+            stk_price_dict = self._get_stk_price()
+            self._set_weight()
+            self._proc_signal()
+            backtest_output_dict = self._do_backtesting(stk_price_dict)
+            self._proc_backtest_output(backtest_output_dict)
+        else:
+            self._create_bbands_strategy()
 
 
     def _create_sliding_window(self):
         print('...Portfolio: _create_sliding_window()...')
         strategy_config = self.strategy_config
-        self.window_config = {
+        window_config = {
             'strategy': strategy_config['strategy'],
             'factor_list': strategy_config['factor_list'],
             'n_season': strategy_config['n_season'],
@@ -48,9 +55,39 @@ class Portfolio:
             'signal': {},
             'weight': {},
         }
-        sliding_window = SlidingWindow(self.window_config, self.cal, self.fac)
+        sliding_window = SlidingWindow(window_config, self.cal, self.fac)
         self.window_config = sliding_window.window_config
-        self.ticker_list = self.window_config['ticker_list']
+
+
+    def _create_bbands_strategy(self):
+        print('...Portfolio: _create_bbands_strategy()...')
+        strategy_config = self.strategy_config
+        window_config = {
+            'strategy': strategy_config['strategy'],
+            'factor_list': strategy_config['factor_list'],
+            'pick_ticker_method': pick_ticker_method[0],
+            'n_season': strategy_config['n_season'],
+            'group': strategy_config['group'],
+            'position': strategy_config['position'],
+            'start_date': strategy_config['start_date'],
+            'end_date': strategy_config['end_date'],
+            'ticker_list': [],
+            'weight': {},
+        }
+        report_date = self.cal.get_report_date_list(window_config['start_date'], window_config['end_date'])[0]
+
+        if window_config['pick_ticker_method'] == 1:
+            one_factor_window = OneFactorWindow(window_config, report_date, self.cal, self.fac)
+            window_config['ticker_list'] = one_factor_window.get_ticker_list()
+        elif window_config['pick_ticker_method'] == 2:
+            two_factor_window = TwoFactorWindow(window_config, report_date, self.cal, self.fac)
+            window_config['ticker_list'] = two_factor_window.get_ticker_list()
+        self.window_config = window_config
+
+        stk_price_dict = self._get_stk_price()
+        self._set_weight()
+
+        print(self.window_config)
 
 
     def _proc_ticker_list(self):
@@ -60,18 +97,19 @@ class Portfolio:
     def _get_stk_price(self):
         print('...Portfolio: _get_stk_price()...')
         strategy_config = self.strategy_config
+        ticker_list = self.window_config['ticker_list']
         start_date = strategy_config['start_date'].split("-")
         start_date = "".join(start_date)
         end_date = strategy_config['end_date'].split("-")
         end_date = "".join(end_date)
         payloads = {
-            'ticker_list': self.ticker_list,
+            'ticker_list': ticker_list,
             'date': start_date + "-" + end_date
         }
         response = requests.get(server_ip + "stk/get_ticker_period_stk", params=payloads)
         output_dict = json.loads(response.text)['result']
 
-        for ticker in self.ticker_list:
+        for ticker in ticker_list:
             stk_df = pd.DataFrame(output_dict[ticker])
             stk_df['date'] = [datetime.datetime.strptime(elm, "%Y-%m-%d") for elm in stk_df['date']]
             stk_df.set_index("date", inplace=True)
@@ -85,9 +123,10 @@ class Portfolio:
     def _set_weight(self):
         print('...Portfolio: _set_weight()...')
         strategy_config = self.strategy_config
+        ticker_list = self.window_config['ticker_list']
         if strategy_config['weight_setting'] == 0:
-            weight = strategy_config['start_equity'] / len(self.ticker_list)
-            for ticker in self.ticker_list:
+            weight = strategy_config['start_equity'] / len(ticker_list)
+            for ticker in ticker_list:
                 self.window_config['weight'][ticker] = weight
 
         elif strategy_config['weight_setting'] == 1:
@@ -101,7 +140,7 @@ class Portfolio:
         print('...Portfolio: _proc_signal()...')
         signal_dict = self.window_config['signal']
         buy_and_sell_dict = {}
-        for ticker in self.ticker_list:
+        for ticker in self.window_config['ticker_list']:
             temp_dict = {}
             temp_dict['buy_list'] = []
             temp_dict['sell_list'] = []
@@ -114,32 +153,50 @@ class Portfolio:
                 elif signal == 3:
                     buy_and_sell_dict[ticker]['sell_list'].append(date)
         # print(buy_and_sell_dict)
-        return buy_and_sell_dict
+        self.window_config['buy_and_sell_list'] = buy_and_sell_dict
 
 
-    def _do_backtesting(self, stk_price_dict, buy_and_sell_dict):
+    def _do_backtesting(self, stk_price_dict):
         print('...Portfolio: _do_backtesting()...')
         strategy_config = self.strategy_config
+        window_config = self.window_config
         backtest_output_dict = {}
 
-        for ticker, value in buy_and_sell_dict.items():
-            try:
-                buy_list = value['buy_list']
-                sell_list = value['sell_list']
-                MyBacktest.set_param(MyBacktest, buy_list, sell_list)
-                bt = Backtest(stk_price_dict[ticker],
-                                MyBacktest,
-                                cash=int(self.window_config['weight'][ticker]),
-                                commission=commission,
-                                exclusive_orders=True)
-                output = bt.run()
-                # bt.plot()
-                backtest_output_dict[ticker] = output
-                print('Complete backtesting ', ticker)
-            except Exception as e:
-                print(e)
-                print('Fail: ', ticker)
-                pass
+        if strategy_config['strategy'] != 2:
+            for ticker, value in window_config['buy_and_sell_list'].items():
+                try:
+                    buy_list = value['buy_list']
+                    sell_list = value['sell_list']
+                    MyBacktest.set_param(MyBacktest, buy_list, sell_list)
+                    bt = Backtest(stk_price_dict[ticker],
+                                    MyBacktest,
+                                    cash=int(window_config['weight'][ticker]),
+                                    commission=commission,
+                                    exclusive_orders=True)
+                    output = bt.run()
+                    # bt.plot()
+                    backtest_output_dict[ticker] = output
+                    print('Complete backtesting ', ticker)
+                except Exception as e:
+                    print(e)
+                    print('Fail: ', ticker)
+                    pass
+        else:
+            for ticker in window_config['ticker_list']:
+                try:
+                    bt = Backtest(stk_price_dict[ticker],
+                                    BBands,
+                                    cash=int(window_config['weight'][ticker]),
+                                    commission=commission,
+                                    exclusive_orders=True)
+                    output = bt.run()
+                    # bt.plot()
+                    backtest_output_dict[ticker] = output
+                    print('Complete backtesting ', ticker)
+                except Exception as e:
+                    print(e)
+                    print('Fail: ', ticker)
+                    pass
         return backtest_output_dict
 
 

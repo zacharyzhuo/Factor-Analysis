@@ -10,6 +10,7 @@ from modules.portfolio import Portfolio
 class MyAsset:
     def __init__(self, strategy_config, cal, fac):
         print('----------------------')
+        print('strategy: ', strategy_config['strategy'])
         print('factor_list: ', strategy_config['factor_list'])
         print('weight_setting: ', strategy_config['weight_setting'])
         print('n_season: ', strategy_config['n_season'])
@@ -40,8 +41,15 @@ class MyAsset:
         portfo_df = self.portfolio.portfolio_performance_df
         portfo_dict = self.portfolio.portfolio_performance_dict
 
-        # e.g. MOM_0_1_1_5
-        file_name = "%s_%s_%s_%s_%s" % (strategy_config['factor_list'][0], 
+        if len(strategy_config['factor_list']) > 1:
+            factor_list_file_name = '&'.join(strategy_config['factor_list'])
+        else:
+            factor_list_file_name = strategy_config['factor_list'][0]
+
+        # e.g. 1_MOM_0_1_1_5 or 2_MOM&GVI_0_1_1_5
+        file_name = "%s_%s_%s_%s_%s_%s" % (
+                                    str(strategy_config['strategy']),
+                                    factor_list_file_name, 
                                     str(strategy_config['weight_setting']), 
                                     str(strategy_config['n_season']), 
                                     str(strategy_config['group']), 

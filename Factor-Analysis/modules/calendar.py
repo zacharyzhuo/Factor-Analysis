@@ -95,7 +95,7 @@ class Calendar:
 
     
     def get_report_date_list(self, start_date, end_date):
-        print('...Calendar: get_report_date_list()...')
+        # print('...Calendar: get_report_date_list()...')
         try:
             report_date_list = ['03-31', '05-15', '08-14', '11-14']
             df = self.date_df
@@ -124,7 +124,7 @@ class Calendar:
 
 
     def get_report_date(self, date, how):
-        print('...Calendar: get_report_date()...')
+        # print('...Calendar: get_report_date()...')
         try:
             if type(date) is not str:
                 date = date.strftime('%Y-%m-%d')

@@ -29,4 +29,4 @@ class SlidingWindow:
                 my_window = TwoFactorWindow(self.window_config, report_date, self.cal, self.fac)
                 self.window_config = my_window.play_window()
         
-        print('window_config: ', self.window_config)
+        # print('window_config: ', self.window_config)

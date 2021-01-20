@@ -42,7 +42,7 @@ class TwoFactorWindow:
         second_factor_df = factor_df_dict[second_factor].loc[rank_list]
         group_list = self.fac.rank_factor(second_factor_df, second_factor)
         ticker_list = group_list[0]['ticker'].iloc[0: window_config['position']].tolist()
-        print('ticker_list: ', ticker_list)
+        # print('ticker_list: ', ticker_list)
         return ticker_list
     
 
@@ -81,7 +81,7 @@ class TwoFactorWindow:
         t1_config['end_date'] = report_date
         t1_config['first_factor_df'] = factor_df_dict[first_factor]
         t1_config['second_factor_df'] = factor_df_dict[second_factor]
-        print('t1_config: ', t1_config)
+        # print('t1_config: ', t1_config)
         return t1_config
 
 
@@ -144,7 +144,7 @@ class TwoFactorWindow:
         t2_config = {}
         t2_config['start_date'] = t1_config['end_date']
         t2_config['end_date'] = self.cal.get_report_date(report_date, 1)
-        print('t2_config: ', t2_config)
+        # print('t2_config: ', t2_config)
     
 
     def play_window(self):

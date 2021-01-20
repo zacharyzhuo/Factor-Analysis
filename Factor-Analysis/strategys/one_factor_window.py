@@ -34,7 +34,7 @@ class OneFactorWindow:
 
         rank_list = group_list[window_config['group'] - 1]
         ticker_list = rank_list['ticker'].iloc[0: window_config['position']].tolist()
-        print('ticker_list: ', ticker_list)
+        # print('ticker_list: ', ticker_list)
         return ticker_list
     
 
@@ -121,7 +121,7 @@ class OneFactorWindow:
     
 
     def play_window(self):
-        print('...OneFactorWindow: play_window()...')
+        # print('...OneFactorWindow: play_window()...')
         t1_config = self._set_t1()
         self._set_t2(t1_config)
         return self.window_config
