@@ -12,7 +12,6 @@ class MyAsset:
         print('----------------------')
         print('strategy: ', strategy_config['strategy'])
         print('factor_list: ', strategy_config['factor_list'])
-        print('weight_setting: ', strategy_config['weight_setting'])
         print('n_season: ', strategy_config['n_season'])
         print('group: ', strategy_config['group'])
         print('position: ', strategy_config['position'])
@@ -46,11 +45,10 @@ class MyAsset:
         else:
             factor_list_file_name = strategy_config['factor_list'][0]
 
-        # e.g. 0_MOM_0_1_1_5 or 1_MOM&GVI_0_1_1_5
-        file_name = "%s_%s_%s_%s_%s_%s" % (
+        # e.g. 0_MOM_0_1_5 or 1_MOM&GVI_0_1_5
+        file_name = "%s_%s_%s_%s_%s" % (
                                     str(strategy_config['strategy']),
-                                    factor_list_file_name, 
-                                    str(strategy_config['weight_setting']), 
+                                    factor_list_file_name,
                                     str(strategy_config['n_season']), 
                                     str(strategy_config['group']), 
                                     str(strategy_config['position']))

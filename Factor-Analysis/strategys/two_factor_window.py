@@ -42,7 +42,9 @@ class TwoFactorWindow:
         second_factor_df = factor_df_dict[second_factor].loc[rank_list]
         group_list = self.fac.rank_factor(second_factor_df, second_factor)
         ticker_list = group_list[0]['ticker'].iloc[0: window_config['position']].tolist()
-        print('ticker_list: ', ticker_list)
+        self.window_config['ticker_list'] = ticker_list
+        self.ticker_list = ticker_list
+        # print('ticker_list: ', ticker_list)
         return ticker_list
     
 
@@ -54,11 +56,6 @@ class TwoFactorWindow:
         second_factor = factor_list[1]
         report_date = self.report_date
         t1_config = {}
-
-        if window_config['if_first'] == True:
-            ticker_list = self.get_ticker_list()
-            self.window_config['ticker_list'] = ticker_list
-            self.ticker_list = ticker_list
 
         if report_date.split('-')[1] == '03':
             how = 1

@@ -34,6 +34,8 @@ class OneFactorWindow:
 
         rank_list = group_list[window_config['group'] - 1]
         ticker_list = rank_list['ticker'].iloc[0: window_config['position']].tolist()
+        self.window_config['ticker_list'] = ticker_list
+        self.ticker_list = ticker_list
         # print('ticker_list: ', ticker_list)
         return ticker_list
     
@@ -43,11 +45,6 @@ class OneFactorWindow:
         window_config = self.window_config
         report_date = self.report_date
         t1_config = {}
-
-        if window_config['if_first'] == True:
-            ticker_list = self.get_ticker_list()
-            self.window_config['ticker_list'] = ticker_list
-            self.ticker_list = ticker_list
 
         if report_date.split('-')[1] == '03':
             how = 1

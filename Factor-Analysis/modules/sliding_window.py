@@ -16,17 +16,34 @@ class SlidingWindow:
         self.report_date_list = cal.get_report_date_list(window_config['start_date'], window_config['end_date'])
         self._slide_window()
 
+
     def _slide_window(self):
         print('...SlidingWindow: _slide_window()...')
+        window_config = self.window_config
         # one factor strategy
-        if self.window_config['strategy'] == 0:
+        if window_config['strategy'] == 0:
             for report_date in self.report_date_list:
-                my_window = OneFactorWindow(self.window_config, report_date, self.cal, self.fac)
+                my_window = OneFactorWindow(window_config, report_date, self.cal, self.fac)
+                if window_config['if_first'] == True:
+                    my_window.get_ticker_list()
                 self.window_config = my_window.play_window()
+
         # two factor strategy
-        elif self.window_config['strategy'] == 1:
+        elif indow_config['strategy'] == 1:
             for report_date in self.report_date_list:
-                my_window = TwoFactorWindow(self.window_config, report_date, self.cal, self.fac)
+                my_window = TwoFactorWindow(window_config, report_date, self.cal, self.fac)
+                if window_config['if_first'] == True:
+                    my_window.get_ticker_list()
+                self.window_config = my_window.play_window()
+                
+        # BBands strategy
+        elif window_config['strategy'] == 2:
+            for report_date in self.report_date_list:
+                if len(window_config['factor_list']) == 1:
+                    my_window = OneFactorWindow(window_config, report_date, self.cal, self.fac)
+                elif len(window_config['factor_list']) == 2:
+                    my_window = TwoFactorWindow(window_config, report_date, self.cal, self.fac)
+                my_window.get_ticker_list()
                 self.window_config = my_window.play_window()
         
         # print('window_config: ', self.window_config)

@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 
 # strategy = [0, 1, 2]
 # factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
-# 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
-# weight_setting = [0, 1, 2]                  
 # n_season = [1, 2]
 group = [1, 2, 3, 4, 5, 6]
 position = [5, 10, 15, 30, 90]
@@ -30,12 +28,11 @@ class Analysis:
         # self._read_output_file()
 
 
-    def _read_output_file(self, strategy, factor, weight_setting, n_season, group, position):
+    def _read_output_file(self, strategy, factor, n_season, group, position):
         print('...Analysis: doing _read_output_file()...')
         path = './portfolio_performance/'+factor+'/'
-        file_name = "%s_%s_%s_%s_%s_%s" % (str(strategy),
-                                    factor, 
-                                    str(weight_setting), 
+        file_name = "%s_%s_%s_%s_%s" % (str(strategy),
+                                    factor,
                                     str(n_season), 
                                     str(group), 
                                     str(position))
@@ -77,12 +74,11 @@ class Analysis:
 
 
     def analysis_factor_performance(self, strategy, factor):
-        weight_setting = 0
         n_season = 0
         df_list = []
         for gro in group:
             for pos in position:
-                file_name = self._read_output_file(strategy, factor, weight_setting, n_season, gro, pos)
+                file_name = self._read_output_file(strategy, factor, n_season, gro, pos)
                 porfolio_performance_list = self.anslysis_portfolio()
                 porfolio_performance_list.insert(0, file_name)
                 df_list.append(porfolio_performance_list)
