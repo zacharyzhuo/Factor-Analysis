@@ -36,13 +36,13 @@ class TwoFactorWindow:
                 factor_df['mean'] = factor_df.mean(axis=1)
                 factor_df = factor_df['mean']
             factor_df_dict[factor] = factor_df
-
+        
         group_list = self.fac.rank_factor(factor_df_dict[first_factor], first_factor)
         rank_list = group_list[window_config['group'] - 1]['ticker'].tolist()
         second_factor_df = factor_df_dict[second_factor].loc[rank_list]
         group_list = self.fac.rank_factor(second_factor_df, second_factor)
         ticker_list = group_list[0]['ticker'].iloc[0: window_config['position']].tolist()
-        # print('ticker_list: ', ticker_list)
+        print('ticker_list: ', ticker_list)
         return ticker_list
     
 
@@ -94,7 +94,7 @@ class TwoFactorWindow:
         report_date = self.report_date
         first_factor_df = t1_config['first_factor_df']
         second_factor_df = t1_config['second_factor_df']
-        pick_pct = 0.3 # 取兩個因子排名前幾%的數量
+        pick_pct = 0.4 # 取兩個因子排名前幾%的數量
 
         if self.n_season > 0:
             first_factor_df['mean'] = first_factor_df.mean(axis=1)
@@ -148,7 +148,7 @@ class TwoFactorWindow:
     
 
     def play_window(self):
-        print('...TwoFactorWindow: play_window()...')
+        # print('...TwoFactorWindow: play_window()...')
         t1_config = self._set_t1()
         self._set_t2(t1_config)
         return self.window_config

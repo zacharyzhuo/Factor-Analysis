@@ -7,6 +7,7 @@ import json
 import matplotlib.pyplot as plt
 
 
+# strategy = [0, 1, 2]
 # factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 # 0: equal_weight; 1: equal_risk(ATR); 2: equal_risk(SD)
 # weight_setting = [0, 1, 2]                  
@@ -29,10 +30,11 @@ class Analysis:
         # self._read_output_file()
 
 
-    def _read_output_file(self, factor, weight_setting, n_season, group, position):
+    def _read_output_file(self, strategy, factor, weight_setting, n_season, group, position):
         print('...Analysis: doing _read_output_file()...')
         path = './portfolio_performance/'+factor+'/'
-        file_name = "%s_%s_%s_%s_%s" % (factor, 
+        file_name = "%s_%s_%s_%s_%s_%s" % (str(strategy),
+                                    factor, 
                                     str(weight_setting), 
                                     str(n_season), 
                                     str(group), 
@@ -74,13 +76,13 @@ class Analysis:
         return file_name
 
 
-    def analysis_factor_performance(self, factor):
+    def analysis_factor_performance(self, strategy, factor):
         weight_setting = 0
-        n_season = 1
+        n_season = 0
         df_list = []
         for gro in group:
             for pos in position:
-                file_name = self._read_output_file(factor, weight_setting, n_season, gro, pos)
+                file_name = self._read_output_file(strategy, factor, weight_setting, n_season, gro, pos)
                 porfolio_performance_list = self.anslysis_portfolio()
                 porfolio_performance_list.insert(0, file_name)
                 df_list.append(porfolio_performance_list)
@@ -127,10 +129,6 @@ class Analysis:
 
         # Sharp Ratio
         sharp_ratio = (df['Return [%]'].mean() - (risk_free_rate * 100)) / standar_error
-        print('Return %: ', df['Return [%]'].mean())
-        print('risk_free_rate: ', risk_free_rate * 100)
-        print('standar_error: ', standar_error)
-        print('sharp_ratio: ', sharp_ratio)
         porfolio_performance_list.append(sharp_ratio)
 
         column_name = ['Net Profit (%)', 'CAGR (%)', 'MDD (%)', 'Profit Factor', 'Standar Error', 'Sharp Ratio']

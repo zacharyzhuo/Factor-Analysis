@@ -11,3 +11,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.vscode
+
+# result data
+portfolio_performance/
