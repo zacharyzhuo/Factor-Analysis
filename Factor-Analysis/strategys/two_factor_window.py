@@ -6,6 +6,7 @@ import json
 
 
 class TwoFactorWindow:
+
     def __init__(self, window_config, report_date, cal, fac):
         self.window_config = window_config
         self.report_date = report_date
@@ -14,9 +15,8 @@ class TwoFactorWindow:
         self.n_season = window_config['n_season']
         self.ticker_list = window_config['ticker_list']
     
-
     def get_ticker_list(self):
-        print('...TwoFactorWindow: get_ticker_list()...')
+        print('[TwoFactorWindow]: get_ticker_list()')
         window_config = self.window_config
         date = self.cal.advance_date(window_config['start_date'], 1, 's')
         factor_list = window_config['factor_list']
@@ -47,9 +47,8 @@ class TwoFactorWindow:
         # print('ticker_list: ', ticker_list)
         return ticker_list
     
-
     def _set_t1(self):
-        # print('...TwoFactorWindow: _set_t1()...')
+        # print('[TwoFactorWindow]: _set_t1()')
         window_config = self.window_config
         factor_list = window_config['factor_list']
         first_factor = factor_list[0]
@@ -81,9 +80,8 @@ class TwoFactorWindow:
         # print('t1_config: ', t1_config)
         return t1_config
 
-
     def _set_t2(self, t1_config):
-        # print('...TwoFactorWindow: _set_t2()...')
+        # print('[TwoFactorWindow]: _set_t2()')
         window_config = self.window_config
         factor_list = window_config['factor_list']
         first_factor = factor_list[0]
@@ -143,9 +141,8 @@ class TwoFactorWindow:
         t2_config['end_date'] = self.cal.get_report_date(report_date, 1)
         # print('t2_config: ', t2_config)
     
-
     def play_window(self):
-        # print('...TwoFactorWindow: play_window()...')
+        # print('[TwoFactorWindow]: play_window()')
         t1_config = self._set_t1()
         self._set_t2(t1_config)
         return self.window_config

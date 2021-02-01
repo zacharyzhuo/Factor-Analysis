@@ -3,13 +3,9 @@ from talib import BBANDS
 
 
 class BBands(Strategy):
+
     ma_len = 20
     band_width = 2
-    
-    
-    def set_param(self, signal):
-        self.signal = signal
-
 
     def init(self):
         super().init()
@@ -18,8 +14,7 @@ class BBands(Strategy):
         self.up_band = self.I(lambda x: up_band, 'up_band')
         self.mid = self.I(lambda x: mid, 'mid')
         self.down_band = self.I(lambda x: down_band, 'down_band')
-
-
+        
     def next(self):
         super().next()
         if self.data.Close > self.up_band:

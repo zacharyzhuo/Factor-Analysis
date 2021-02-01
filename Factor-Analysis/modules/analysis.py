@@ -17,6 +17,7 @@ risk_free_rate = 0.01
 
 
 class Analysis:
+
     def __init__(self, start_equity, start_date, end_date):
         self.start_equity = start_equity
         self.start_date = start_date
@@ -27,9 +28,8 @@ class Analysis:
         self.trades_df = None
         # self._read_output_file()
 
-
     def _read_output_file(self, strategy, factor, n_season, group, position):
-        print('...Analysis: doing _read_output_file()...')
+        print('[Analysis]: _read_output_file()')
         path = './portfolio_performance/'+factor+'/'
         file_name = "%s_%s_%s_%s_%s" % (str(strategy),
                                     factor,
@@ -72,7 +72,6 @@ class Analysis:
         self.trades_df = self.trades_df.set_index('year')
         return file_name
 
-
     def analysis_factor_performance(self, strategy, factor):
         n_season = 0
         df_list = []
@@ -86,9 +85,8 @@ class Analysis:
         df = pd.DataFrame(df_list, columns=column_name)
         print(df)
 
-
     def anslysis_portfolio(self):
-        print('...Analysis: doing anslysis_portfolio()...')
+        print('[Analysis]: anslysis_portfolio()')
         df = self.df
         equity_df = self.equity_df
         porfolio_performance_list = []
@@ -133,18 +131,16 @@ class Analysis:
         # print(porfolio_performance_df.T)
         return porfolio_performance_list
 
-
     def rank_portfolio_return(self):
-        print('...Analysis: doing rank_portfolio_return()...')
+        print('[Analysis]: rank_portfolio_return()')
         df = self.df
         portfolio_return_df = df.sort_values(ascending=False, by='Return [%]')
         portfolio_return_df = portfolio_return_df.reset_index(drop=True)
         portfolio_return_df = portfolio_return_df[['ticker', 'Return [%]', '# Trades']]
         print(portfolio_return_df)
 
-
     def plot_net_profit_years(self):
-        print('...Analysis: doing plot_net_profit_years()...')
+        print('[Analysis]: plot_net_profit_years()')
         equity_df = self.equity_df
         trades_df = self.trades_df
 

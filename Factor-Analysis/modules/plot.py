@@ -4,17 +4,17 @@ from cycler import cycler
 import seaborn as sns
 
 class Plot:
+
     def make_addplot(self, addplot_list):
-        print('...Plot: make_addplot()...')
+        print('[Plot]: make_addplot()')
         output_list = []
         for elm in addplot_list:
             addplot_data  = mpf.make_addplot(elm)
             output_list.append(addplot_data)
         return output_list
         
-        
     def plot_candlestick(self, df, addplot_list=None):
-        print('...Plot: plot_candlestick()...')
+        print('[Plot]: plot_candlestick()')
         # 设置基本参数
         # type:绘制图形的类型，有candle, renko, ohlc, line等
         # 此处选择candle,即K线图

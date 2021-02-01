@@ -1,4 +1,5 @@
 import time
+import multiprocessing
 
 from modules.calendar import Calendar
 from modules.factor import Factor
@@ -12,7 +13,7 @@ n_season = [0, 1]
 # group = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 # position = [5, 10, 15, 30, 90, 150]
 
-strategy = [3]
+strategy = [2]
 # factor_list = ['EV_EBITDA']
 group = [1]
 position = [5]
@@ -22,17 +23,18 @@ start_date = '2010-01-01'
 end_date = '2017-12-31'
 
 
-try:
-    cal = Calendar('TW')
-    get_factor_start = time.time()
-    fac = Factor(factor_list)
-    get_factor_end = time.time()
-    print("Get factor time: %f second" % (get_factor_end - get_factor_start))
-    for factor in factor_list:
+cal = Calendar('TW')
+
+def job(factor):
+    try:
+        start = time.time()
+        print('factor: ', factor)
+        fac = Factor([factor])
+        get_factor_time = time.time()
+        print("Get factor time: %f second" % (get_factor_time - start))
         for stra in strategy:
             for gro in group:
                 for pos in position:
-                    start = time.time()
                     strategy_config = {
                         'strategy': stra,
                         'factor_list': [factor],
@@ -44,10 +46,10 @@ try:
                         'end_date': end_date,
                     }
                     my_stra = MyAsset(strategy_config, cal, fac)
-                    end = time.time()
-                    print("Execution time: %f second" % (end - start))
-except Exception as e:
-    print(e)
+                    # end = time.time()
+                    # print("Execution time: %f second" % (end - start))
+    except Exception as e:
+        print(e)
 
 
 # analysis = Analysis(start_equity, start_date, end_date)
@@ -56,3 +58,8 @@ except Exception as e:
 # analysis.rank_portfolio_return()
 # analysis.plot_net_profit_years()
        
+
+if __name__ == '__main__':
+    for factor in factor_list:
+        p = multiprocessing.Process(target=job, args=(factor,))
+        p.start()

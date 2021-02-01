@@ -11,6 +11,7 @@ group_size = 150
 
 
 class Factor:
+
     def __init__(self, factor_list):
         # 從資料庫抓出來時會按照字母A-Z排序= =
         factor_list = sorted(factor_list)
@@ -19,9 +20,8 @@ class Factor:
         all_factor_df = self._get_factor()
         self.factor_df_dict = self._proc_factor_df(all_factor_df)
 
-
     def _get_factor(self):
-        print('...Factor: _get_factor()...')
+        print('[Factor]: _get_factor()')
         factor_list = self.factor_list
 
         response = requests.get(server_ip+"fac/stk_list")
@@ -47,9 +47,8 @@ class Factor:
                 all_factor_df = all_factor_df.join(temp_factor_df)
         return all_factor_df
 
-    
     def _proc_factor_df(self, all_factor_df):
-        print('...Factor: _proc_factor_df()...')
+        print('[Factor]: _proc_factor_df()')
         factor_list = self.factor_list
         factor_df_dict = {}
 
@@ -60,10 +59,9 @@ class Factor:
             factor_df_dict[factor_list[i]] = temp_factor_df
         return factor_df_dict
     
-
     # return_list=False 回傳不分群的df
     def rank_factor(self, df, factor, return_list=True, ascending=None):
-        # print('...Factor: rank_factor()...')
+        # print('[Factor]: rank_factor()')
         df = df.reset_index()
         df.columns = ['ticker', factor]
         if ascending == None:
@@ -93,9 +91,8 @@ class Factor:
         else:
             return df
 
-
     def check_nan(self, factor, date):
-        print('...Factor: check_nan()...')
+        print('[Factor]: check_nan()')
         df = self.factor_df_dict[factor]
         df = df.loc[date].reset_index()
         df.columns = ['ticker', factor]
