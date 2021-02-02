@@ -5,8 +5,8 @@ import requests
 import json
 from backtesting import Backtest, Strategy
 
-from strategys.ktn_channel import KTNChannel
-from strategys.buy_and_hold import BuyAndHold
+from strategy.ktn_channel import KTNChannel
+from strategy.buy_and_hold import BuyAndHold
 
 
 server_ip = "http://140.115.87.197:8090/"

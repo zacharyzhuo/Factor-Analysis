@@ -9,11 +9,11 @@ import os
 import sys
 sys.path.append("../")
 
-from modules.factor import Factor
-from modules.calendar import Calendar
+from api.factor import Factor
+from api.calendar import Calendar
 from modules.sliding_window import SlidingWindow
-from strategys.one_factor_window import OneFactorWindow
-from strategys.two_factor_window import TwoFactorWindow
+from window.one_factor_window import OneFactorWindow
+from window.two_factor_window import TwoFactorWindow
 
 
 window_config = {

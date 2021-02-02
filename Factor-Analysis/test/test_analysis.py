@@ -8,13 +8,13 @@ import sys
 sys.path.append("../")
 
 from backtesting import Backtest, Strategy
-from strategys.ktn_channel import KTNChannel
-from strategys.buy_and_hold import BuyAndHold
+from strategy.ktn_channel import KTNChannel
+from strategy.buy_and_hold import BuyAndHold
 
-from modules.calendar import Calendar
-from modules.factor import Factor
+from api.calendar import Calendar
+from api.factor import Factor
 from modules.portfolio import Portfolio
-from modules.analysis import Analysis
+from analysis.analysis import Analysis
 
 
 server_ip = "http://140.115.87.197:8090/"

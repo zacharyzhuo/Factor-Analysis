@@ -7,12 +7,12 @@ import talib
 import sys
 sys.path.append("../")
 
-from modules.factor import Factor
-from modules.calendar import Calendar
-from modules.plot import Plot
-from strategys.ktnchannel import KTNChannel
-from strategys.buyandhold import BuyAndHold
-from strategys.double_moving_average import DoubleMA
+from api.factor import Factor
+from api.calendar import Calendar
+from tools.plot import Plot
+from strategy.ktnchannel import KTNChannel
+from strategy.buyandhold import BuyAndHold
+from strategy.double_moving_average import DoubleMA
 
 
 

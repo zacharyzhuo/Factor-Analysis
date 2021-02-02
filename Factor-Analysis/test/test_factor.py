@@ -7,7 +7,7 @@ import talib
 import sys
 sys.path.append("../")
 
-from modules.factor import Factor
+from api.factor import Factor
 
 
 factor_list = ['MOM', 'GVI']

@@ -60,7 +60,7 @@ class MyAsset:
                                     str(strategy_config['group']), 
                                     str(strategy_config['position']))
 
-        path = './portfolio_performance/'+strategy_config['factor_list'][0]+'/'+file_name
+        path = './results/portfolio_performance/'+strategy_config['factor_list'][0]+'/'+file_name
         portfo_df.to_csv(path + '.csv', header=True)
         with open(path + '.json', 'w') as file:
             json.dump(portfo_dict, file)

@@ -4,8 +4,8 @@ import datetime
 import requests
 import json
 
-from strategys.one_factor_window import OneFactorWindow
-from strategys.two_factor_window import TwoFactorWindow
+from window.one_factor_window import OneFactorWindow
+from window.two_factor_window import TwoFactorWindow
 
 
 class SlidingWindow:

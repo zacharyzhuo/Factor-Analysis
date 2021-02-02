@@ -5,6 +5,9 @@ import requests
 import json
 
 
+pick_pct = 0.2 # 取兩個因子排名前幾%的數量
+
+
 class TwoFactorWindow:
 
     def __init__(self, window_config, report_date, cal, fac):
@@ -89,7 +92,6 @@ class TwoFactorWindow:
         report_date = self.report_date
         first_factor_df = t1_config['first_factor_df']
         second_factor_df = t1_config['second_factor_df']
-        pick_pct = 0.4 # 取兩個因子排名前幾%的數量
 
         if self.n_season > 0:
             first_factor_df['mean'] = first_factor_df.mean(axis=1)

@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 # strategy = [0, 1, 2]
 # factor_list = ['GVI', 'EPS', 'MOM', 'PE', 'EV_EBITDA', 'EV_S', 'FC_P', 'CROIC', 'FC_OI', 'FC_LTD']
 # n_season = [1, 2]
-group = [1, 2, 3, 4, 5, 6]
-position = [5, 10, 15, 30, 90]
+groups = [1]
+positions = [5, 10, 15, 30, 90, 150]
 
 risk_free_rate = 0.01
 
@@ -30,7 +30,7 @@ class Analysis:
 
     def _read_output_file(self, strategy, factor, n_season, group, position):
         print('[Analysis]: _read_output_file()')
-        path = './portfolio_performance/'+factor+'/'
+        path = './results/portfolio_performance/'+factor+'/'
         file_name = "%s_%s_%s_%s_%s" % (str(strategy),
                                     factor,
                                     str(n_season), 
@@ -54,7 +54,7 @@ class Analysis:
             equity_list.append(equity_df)
         equity_df = pd.concat(equity_list, axis=1)
         equity_df.index.name = 'date'
-        equity_df['total_equity']=equity_df.iloc[:, -5:].sum(axis=1)
+        equity_df['total_equity'] = equity_df.iloc[:, -5:].sum(axis=1)
         self.equity_df = equity_df
 
         year_list = range(int(self.start_date.split('-')[0]), int(self.end_date.split('-')[0]) + 1)
@@ -75,8 +75,8 @@ class Analysis:
     def analysis_factor_performance(self, strategy, factor):
         n_season = 0
         df_list = []
-        for gro in group:
-            for pos in position:
+        for gro in groups:
+            for pos in positions:
                 file_name = self._read_output_file(strategy, factor, n_season, gro, pos)
                 porfolio_performance_list = self.anslysis_portfolio()
                 porfolio_performance_list.insert(0, file_name)
@@ -87,6 +87,8 @@ class Analysis:
 
     def anslysis_portfolio(self):
         print('[Analysis]: anslysis_portfolio()')
+        # self._read_output_file(3, 'GVI', 0, 1, 5)
+
         df = self.df
         equity_df = self.equity_df
         porfolio_performance_list = []

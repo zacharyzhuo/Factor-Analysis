@@ -3,14 +3,16 @@ import numpy as np
 import datetime
 import requests
 import json
+import pathos
+from multiprocessing import Pool
 from backtesting import Backtest, Strategy
 
 from modules.sliding_window import SlidingWindow
-from strategys.one_factor_window import OneFactorWindow
-from strategys.two_factor_window import TwoFactorWindow
-from strategys.buy_and_hold import BuyAndHold
-from strategys.bbands_window import BBandsWindow
-from strategys.bbands import BBands
+from window.one_factor_window import OneFactorWindow
+from window.two_factor_window import TwoFactorWindow
+from strategy.buy_and_hold import BuyAndHold
+from strategy.bbands_window import BBandsWindow
+from strategy.bbands import BBands
 
 
 server_ip = "http://140.115.87.197:8090/"
@@ -117,13 +119,60 @@ class Portfolio:
         # print(buy_and_sell_dict)
         self.window_config['buy_and_sell_list'] = buy_and_sell_dict
 
+    # def _do_backtesting(self, stk_price_dict):
+    #     print('[Portfolio]: _do_backtesting()')
+    #     strategy_config = self.strategy_config
+    #     window_config = self.window_config
+    #     backtest_result_dict = {}
+
+    #     for index, ticker in enumerate(window_config['ticker_list']):
+    #         try:
+    #             if strategy_config['strategy'] == 0 or strategy_config['strategy'] == 1:
+    #                 buy_list = window_config['buy_and_sell_list'][ticker]['buy_list']
+    #                 sell_list = window_config['buy_and_sell_list'][ticker]['sell_list']
+    #                 BuyAndHold.set_param(BuyAndHold, buy_list, sell_list)
+    #                 bt = Backtest(stk_price_dict[ticker],
+    #                                 BuyAndHold,
+    #                                 cash=int(window_config['weight'][ticker]),
+    #                                 commission=commission,
+    #                                 exclusive_orders=True)
+    #             elif strategy_config['strategy'] == 2:
+    #                 signal_dict = {}
+    #                 for date, value in window_config['signal'].items():
+    #                     signal_dict[date] = value[ticker]
+    #                 BBandsWindow.set_param(BBandsWindow, signal_dict)
+    #                 bt = Backtest(stk_price_dict[ticker],
+    #                                 BBandsWindow,
+    #                                 cash=int(window_config['weight'][ticker]),
+    #                                 commission=commission,
+    #                                 exclusive_orders=True)
+    #             elif strategy_config['strategy'] == 3:
+    #                 bt = Backtest(stk_price_dict[ticker],
+    #                                 BBands,
+    #                                 cash=int(window_config['weight'][ticker]),
+    #                                 commission=commission,
+    #                                 exclusive_orders=True)
+    #             result = bt.run()
+    #             if strategy_config['strategy'] == 2 or strategy_config['strategy'] == 3:
+    #                 result = bt.optimize(ma_len=range(5, 50, 5), band_width=list(np.arange(0.1, 2.5, 0.1)))
+    #                 print(result._strategy)
+    #             # bt.plot()
+    #             backtest_result_dict[ticker] = result
+    #             print('{}. Complete backtesting {}'.format(index+1, ticker))
+    #         except Exception as e:
+    #             print(e)
+    #             print('Fail: ', ticker)
+    #             pass
+    #     return backtest_result_dict
+
     def _do_backtesting(self, stk_price_dict):
         print('[Portfolio]: _do_backtesting()')
         strategy_config = self.strategy_config
         window_config = self.window_config
         backtest_result_dict = {}
 
-        for ticker in window_config['ticker_list']:
+        # 使用 inner function 特別獨立出需要多核運算的部分
+        def multiprocessing_job(ticker):
             try:
                 if strategy_config['strategy'] == 0 or strategy_config['strategy'] == 1:
                     buy_list = window_config['buy_and_sell_list'][ticker]['buy_list']
@@ -152,15 +201,27 @@ class Portfolio:
                                     exclusive_orders=True)
                 result = bt.run()
                 if strategy_config['strategy'] == 2 or strategy_config['strategy'] == 3:
-                    result = bt.optimize(ma_len=range(5, 50, 5), band_width=list(np.arange(0.1, 2.0, 0.1)))
+                    result = bt.optimize(ma_len=range(5, 50, 5), band_width=list(np.arange(0.1, 2.5, 0.1)))
                     print(result._strategy)
                 # bt.plot()
-                backtest_result_dict[ticker] = result
-                print('Complete backtesting ', ticker)
+                print('Complete backtesting {}'.format(ticker))
+                return {ticker: result}
             except Exception as e:
                 print(e)
                 print('Fail: ', ticker)
                 pass
+        
+        # 因為有使用 inner function 所以要使用 pathos 的 multiprocessing 而非 python 原生的
+        # Pool() 不放參數則默認使用電腦核的數量
+        pool = pathos.multiprocessing.Pool()
+        results = pool.map(multiprocessing_job, window_config['ticker_list']) 
+        pool.close()
+        pool.join()
+
+        for result in results:
+            if result:
+                backtest_result_dict[list(result.keys())[0]] = list(result.values())[0]
+
         return backtest_result_dict
 
     def _proc_backtest_result(self, backtest_result_dict):

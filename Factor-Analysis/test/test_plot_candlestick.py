@@ -6,7 +6,7 @@ import json
 import talib
 import sys
 sys.path.append("../")
-from modules.plot import Plot
+from tools.plot import Plot
 
 
 server_ip = "http://140.115.87.197:8090/"
