@@ -17,9 +17,11 @@ class BBands(Strategy):
         
     def next(self):
         super().next()
+        # 收盤價大於通道上軌: 買
         if self.data.Close > self.up_band:
             if not self.position:
                 self.buy()
+        # 收盤價小於通道上軌: 賣
         if self.data.Close < self.down_band:
             if self.position:
                 for trade in self.trades:

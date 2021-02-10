@@ -9,8 +9,8 @@ import os
 import sys
 sys.path.append("../")
 
-from api.factor import Factor
-from api.calendar import Calendar
+from service.factor import Factor
+from service.calendar import Calendar
 from modules.sliding_window import SlidingWindow
 from window.one_factor_window import OneFactorWindow
 from window.two_factor_window import TwoFactorWindow

@@ -3,37 +3,45 @@ import numpy as np
 import requests
 import json
 from datetime import datetime, timedelta
-
-
-server_ip = "http://140.115.87.197:8090/"
+from utils.config import Config
 
 
 class Calendar:
 
     def __init__(self, country):
-        self.country = country
-        self.date_df = self._get_all_trade_day()
+        self._country = country
+
+        self._cfg = Config()
+        self._api_server_IP = self._cfg.get_value('IP', 'api_server_IP')
+
+        self._date_df = self._get_all_trade_day()
 
     def _get_all_trade_day(self):
-        print('[Calendar]: _get_all_trade_day()')
+        # 預載歷史每天交易日日期
         payloads = {
-            'country': 'TW',
+            'country': self._country,
         }
-        response = requests.get(server_ip+"cal/get_all_date", params=payloads)
+        response = requests.get("http://{}/cal/get_all_date".format(self._api_server_IP), params=payloads)
         date_list = json.loads(response.text)['result']
         date_df = pd.DataFrame(date_list, columns=['date'])
         date_df['date'] = pd.to_datetime(date_df['date'], format="%Y-%m-%d")
         return date_df
 
+    # 往前抓交易日
+    # input: date   : 以某天為基準
+    #        how    : 往前數多少單位
+    #        freq   : (顆粒度) d:日 m:月 s:季 y:年
     def advance_date(self, date, how, freq):
-        # print('[Calendar]: advance_date()')
-        df = self.date_df
+        df = self._date_df
         how = (abs(int(how)) + 1) *-1
         freq = freq.lower()
         if type(date) is str:
             date = datetime.strptime(date, "%Y-%m-%d")
+        # 歷史資料最早的那天
         start_date = df['date'].iloc[0]
+        # 抓出比參數(date)更早或等於的交易日
         date_df = df.loc[df['date'] <= date]
+        # 最接近參數(date)的交易日
         selected_date = date_df['date'].iloc[-1]
 
         if freq == 'd':
@@ -92,11 +100,13 @@ class Calendar:
         result_date = result_date['date'].strftime('%Y-%m-%d')
         return result_date    
 
+    # 抓出指定日期內所有財報公布日
+    # input: start_date   : 開始日
+    #        end_date     : 結束日
     def get_report_date_list(self, start_date, end_date):
-        # print('[Calendar]: get_report_date_list()')
         try:
             report_date_list = ['03-31', '05-15', '08-14', '11-14']
-            df = self.date_df
+            df = self._date_df
             date_list = []
 
             if type(start_date) is not str:
@@ -120,11 +130,14 @@ class Calendar:
             pass
         return date_list
 
+    # 往前或者往後抓幾個財報公布日
+    # input: date   : 基準日
+    #        how    : 單位
     def get_report_date(self, date, how):
-        # print('...Calendar: get_report_date()...')
         try:
             if type(date) is not str:
                 date = date.strftime('%Y-%m-%d')
+            # 預設為資料庫歷史資料最大區間
             report_date_list = self.get_report_date_list('2000-01-01', '2020-12-31')
             result_list = []
             for report_date in report_date_list:

@@ -7,8 +7,8 @@ import talib
 import sys
 sys.path.append("../")
 
-from api.factor import Factor
-from api.calendar import Calendar
+from service.factor import Factor
+from service.calendar import Calendar
 from tools.plot import Plot
 from strategy.ktnchannel import KTNChannel
 from strategy.buyandhold import BuyAndHold

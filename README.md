@@ -5,6 +5,20 @@ pip freeze > requirements.txt
 python -m pip install -r requirements.txt
 ```
 
+# ActiveMQ
+```
+cd [activemq_install_dir]
+bin\activemq start
+```
+
+# Run Factor Analysis API
+```
+cd C:\Users\IPLAB2\Documents\GitHub\Factor-Analysis
+.\venv\Scripts\activate
+cd Factor-Analysis-API
+python app.py
+```
+
 # For Windows
 ### install TA-Lib
 ```

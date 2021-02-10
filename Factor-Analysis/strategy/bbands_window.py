@@ -9,7 +9,7 @@ class BBandsWindow(Strategy):
     signal = -1
     
     def set_param(self, signal_dict):
-        self.signal_dict = signal_dict
+        self._signal_dict = signal_dict
 
     def init(self):
         super().init()
@@ -24,8 +24,8 @@ class BBandsWindow(Strategy):
         today = self.data.index[-1].strftime('%Y-%m-%d')
 
         # 每次T2開始的日子
-        if today in self.signal_dict:
-            self.signal = self.signal_dict[today]
+        if today in self._signal_dict:
+            self.signal = self._signal_dict[today]
             # 目前還持有部位且當這個T2的訊號為賣出時則全部賣出
             if self.signal == 3 and self.position:
                 for trade in self.trades:

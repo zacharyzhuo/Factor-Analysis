@@ -11,8 +11,8 @@ from backtesting import Backtest, Strategy
 from strategy.ktn_channel import KTNChannel
 from strategy.buy_and_hold import BuyAndHold
 
-from api.calendar import Calendar
-from api.factor import Factor
+from service.calendar import Calendar
+from service.factor import Factor
 from modules.portfolio import Portfolio
 from analysis.analysis import Analysis
 
