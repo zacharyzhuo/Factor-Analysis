@@ -58,7 +58,6 @@ class FactorAnalysisTaskHandler:
             # 直到全部任務完成才出去
             while True:
                 self._distribute_to_node(task_id, task_list)
-                time.sleep(30)
                 # 檢查是否仍有未完成任務
                 status, task_id, task_list = self._factor_analysis_handler.check_unfinished_task()
                 # 確認所有任務完成
@@ -95,7 +94,7 @@ class FactorAnalysisTaskHandler:
                 elif node['health'] == 0:
                     batch_task_list = task_list[batch_task_slice_list[i][0]:batch_task_slice_list[i][1]]
                     # MQTT 發送任務
-                    print(node['name'])
+                    print("node name: ", node['name'])
                     HostMsgHandler().publish_processing_task(node['name'], task_id, batch_task_list)
                     # 更新任務持有者
                     self._factor_analysis_handler.update_task_owner(node['name'], batch_task_list)
@@ -114,8 +113,8 @@ class FactorAnalysisTaskHandler:
             if self._node_handler.check_all_node_finish():
                 print("[FactorAnalysisTaskHandler] 全部節點已經運算完成或死亡")
                 break
-            # 若仍有節點在運算中 間隔30秒檢查一次
-            time.sleep(30)
+            # 若仍有節點在運算中 間隔120秒檢查一次
+            time.sleep(120)
             print("[FactorAnalysisTaskHandler] 仍有節點在運算 持續檢查健康度")
 
     def _combinate_parameter(self):

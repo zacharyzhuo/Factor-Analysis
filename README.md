@@ -7,7 +7,7 @@ python -m pip install -r requirements.txt
 
 # ActiveMQ
 ```
-cd [activemq_install_dir]
+cd C:\Users\IPLAB2\Desktop\apache-activemq-5.16.1
 bin\activemq start
 ```
 

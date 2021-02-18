@@ -124,9 +124,9 @@ class Portfolio:
     def _do_backtesting(self, stk_price_dict):
         print('[Portfolio]: doing backtesting...')
         commission = float(self._cfg.get_value('parameter', 'commission'))
-        min_ma = float(self._cfg.get_value('parameter', 'min_ma'))
-        max_ma = float(self._cfg.get_value('parameter', 'max_ma'))
-        ma_step = float(self._cfg.get_value('parameter', 'ma_step'))
+        min_ma = int(self._cfg.get_value('parameter', 'min_ma'))
+        max_ma = int(self._cfg.get_value('parameter', 'max_ma'))
+        ma_step = int(self._cfg.get_value('parameter', 'ma_step'))
         min_band_width = float(self._cfg.get_value('parameter', 'min_band_width'))
         max_band_width = float(self._cfg.get_value('parameter', 'max_band_width'))
         band_width_step = float(self._cfg.get_value('parameter', 'band_width_step'))

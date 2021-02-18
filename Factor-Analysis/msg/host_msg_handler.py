@@ -4,7 +4,7 @@ import os
 import random
 import socket
 import time
-import paho.mqtt.client as paho
+import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 from datetime import datetime
 from utils.config import Config
@@ -17,29 +17,45 @@ class HostMsgHandler:
         self._cfg = Config()
         self._dbmgr = DBMgr()
 
-        self._processes = os.cpu_count()  # 伺服器CPU核心數
         self._server_name = getpass.getuser()  # 伺服器使用者名稱
         self._ip = socket.gethostbyname(socket.gethostname())
         self._host_IP = self._cfg.get_value('IP', 'host_IP')
-        self._share_folder_IP = self._cfg.get_value('IP', 'share_folder_IP')
         self.client_ID = self._server_name + "_" + self._ip
         self._mqtt_account = self._cfg.get_value('MQTT', 'account')
         self._mqtt_password = self._cfg.get_value('MQTT', 'password')
-        self._db_data = self._cfg.get_database()
 
-    # (Subscribe) 訂閱所有回傳的 TOPIC
-    def subscribe_respond(self):
+    def active_mqtt(self):
         mqtt_client = self.client_ID + " StatusRespond and FinishTask"  # 設定節點名稱
-        
-        client = paho.Client(client_id=mqtt_client, clean_session=False)
-        client.message_callback_add("Analysis/StatusRespond", self._handle_status_update)
-        client.message_callback_add("Analysis/HealthResponse", self._handle_health_update)
-        client.message_callback_add("Analysis/FinishTask", self._handle_finish_task)
+        client = mqtt.Client(client_id=mqtt_client)
+        client.on_connect = self._on_connect
+        client.on_message = self._on_message
+
         client.username_pw_set(self._mqtt_account, self._mqtt_password)
         client.connect(self._host_IP, 1883)
-        # 開啟另一個
+        # 開始連線 執行設定的動作和處理重新連線問題
         client.loop_start()
-        client.subscribe("Analysis/#", qos=2)
+
+    def _on_connect(self, client, userdata, flag, rc):
+        print("Connected with result code {}".format(str(rc)))
+        # 0: 連接成功
+        # 1: 協議版本錯誤
+        # 2: 無效的客戶端標示
+        # 3: 伺服器無法使用
+        # 4: 使用者帳號或密碼錯誤
+        # 5: 未經授權
+
+        # 將訂閱主題寫在 on_connect 中，當重新連線時將會重新訂閱
+        client.subscribe("Analysis/StatusRespond", qos=2)
+        client.subscribe("Analysis/HealthResponse", qos=2)
+        client.subscribe("Analysis/FinishTask", qos=2)
+
+    def _on_message(self, client, userdata, msg):
+        if msg.topic == "Analysis/StatusRespond":
+            self._handle_status_update(client, userdata, msg)
+        elif msg.topic == "Analysis/HealthResponse":
+            self._handle_health_update(client, userdata, msg)
+        elif msg.topic == "Analysis/FinishTask":
+            self._handle_finish_task(client, userdata, msg)
 
     # (Publish) 發送節點狀態確認訊息
     def publish_status_check(self):

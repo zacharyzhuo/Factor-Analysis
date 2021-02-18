@@ -4,26 +4,42 @@ import pathlib
 import sys
 sys.path.append("../")
 from utils.db import ConnMysql
+from utils.config import Config
 
 
 row_data_path = ['../data/raw_data/stock/', '../data/raw_data/stock_index/', '../data/raw_data/indicator/']
 processed_data_path = ['../data/processed_data/stock/', '../data/processed_data/stock_index/', '../data/processed_data/indicator/']
 
-ind_name_list = ['date', '歸屬母公司淨利（損）', '股東權益總額', '每股淨值(B)',
-            '收盤價(元)', '每股盈餘', '報酬率(季)', '本益比-TSE',
-            '季底普通股市值', '淨負債', '稅前息前折舊前淨利', '營業收入淨額',
-            '自由現金流量(D)', '負債及股東權益總額', '特別股負債－非流動', '應付公司債－非流動',  
-            '銀行借款－非流動', '其他長期借款－非流動', 'FV變動入損益非流動金融負債－指定公平價值－公司債'
-            ]
+file_name_list = [
+    '常續性稅後淨利', '股東權益總額', '每股淨值(B)',
+    '每股盈餘', '季底普通股市值', '淨負債', '稅前息前折舊前淨利', '營業收入淨額',
+    '自由現金流量(D)', '負債及股東權益總額', '特別股負債－非流動', '應付公司債－非流動',  
+    '銀行借款－非流動', '其他長期借款－非流動', '營業成本', '期末普通股－現金股利',
+    '期末特別股－現金股利', '來自營運之現金流量', 'FV變動入損益非流動金融負債－指定公平價值－公司債',
+    '收盤價(元)', '流通在外股數(千股)', '本益比-TSE'
+]
+
+ind_name_list = [
+    'date', '常續性稅後淨利', '股東權益總額', '每股淨值(B)',
+    '每股盈餘', '季底普通股市值', '淨負債', '稅前息前折舊前淨利', '營業收入淨額',
+    '自由現金流量(D)', '負債及股東權益總額', '特別股負債－非流動', '應付公司債－非流動',  
+    '銀行借款－非流動', '其他長期借款－非流動', '營業成本', '期末普通股－現金股利',
+    '期末特別股－現金股利', '來自營運之現金流量', 'FV變動入損益非流動金融負債－指定公平價值－公司債',
+    '收盤價(元)', '流通在外股數(千股)', '本益比-TSE'
+]
 
 mydb = ConnMysql()
 db_name = ['stock', 'stock_index', 'indicator']
 
+config = Config()
+path = config.get_value('path', 'path_to_share_folder')
+path = path + 'indicator/'
+
 
 def proc_ind_data():
     ind_dict = {}
-    for filename in os.listdir(row_data_path[2]):
-        filepath = str(pathlib.Path().absolute())+'/'+row_data_path[2]+filename
+    for filename in file_name_list:
+        filepath = "{}{}.xlsx".format(path, filename)
         df = pd.read_excel(filepath)
         ind_name = df.iloc[0][1]
         df = df.drop(0, axis=0)
@@ -54,8 +70,6 @@ def trans_ind_to_one_symbol(ind_dict):
         ticker_df = pd.concat(ind_list, axis=1)
         ticker_df.columns = ind_name_list
         ticker_data_dict[ticker] = ticker_df
-        print(ticker)
-        print(ticker_df)
     print('successfully transfer to one symbol')
     return ticker_data_dict
 
@@ -84,6 +98,6 @@ def check_if_add_ticker(ind_dict):
 """
 write indicator data
 """
-ind_dict = proc_ind_data()
-ticker_data_dict = trans_ind_to_one_symbol(ind_dict)
-write_data_to_mysql(db_name[2], ticker_data_dict)
+# ind_dict = proc_ind_data()
+# ticker_data_dict = trans_ind_to_one_symbol(ind_dict)
+# write_data_to_mysql(db_name[2], ticker_data_dict)
