@@ -1,9 +1,34 @@
+from itertools import product
 
 
 class General:
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def combinate_parameter(factor_list, strategy_list, group_list, position_list):
+        data = factor_list, strategy_list, group_list, position_list
+        task_list = []
+        for x, y, z, w in product(*data):
+            # 單因子不能執行策略 1
+            if len(x) == 1 and y != 1:
+                task_list.append([x, y, z, w])
+            # 雙因子不能執行策略 0
+            if len(x) == 2 and y != 0:
+                task_list.append([x, y, z, w])
+        return task_list
+
+    @staticmethod
+    def get_distinct_factor_list(org_factor_list):
+        factor_list = []
+
+        # 找出不重複的因子
+        for elm in org_factor_list:
+            for factor in elm:
+                if factor not in factor_list:
+                    factor_list.append(factor)
+        return factor_list
 
     @staticmethod
     def string_to_list(string, d_type='string', sep='|'):
@@ -97,6 +122,13 @@ class General:
                     string = string + sep + "{}&{}".format(str(sub_list[0]), str(sub_list[1]))
             string = string[1:]
         return string
+
+    @staticmethod
+    def factor_to_string(ori_list):
+        if len(ori_list) == 1:
+            return ori_list[0]
+        elif len(ori_list) == 2:
+            return "{}&{}".format(ori_list[0], ori_list[1])
 
     @staticmethod
     def list_to_dict(key_column, data):

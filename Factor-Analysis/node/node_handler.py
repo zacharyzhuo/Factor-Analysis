@@ -22,6 +22,11 @@ class NodeHandler:
         time_out = int(self._cfg.get_value('time', 'status_check'))
         time.sleep(time_out)
 
+    def publish_node_health_check(self):
+        HostMsgHandler().publish_health_check()
+        time_out = int(self._cfg.get_value('time', 'status_check'))
+        time.sleep(time_out)
+
     def get_node_status(self):
         sql = "SELECT * FROM `node` ORDER BY `cpu_status`"
         args = {}

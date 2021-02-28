@@ -92,7 +92,7 @@ def cal_factor_data():
         # P_IC: 季底普通股市值 / 負債及股東權益總額
         factor_df['P_IC'] = df[i_list[5]] / df[i_list[10]]
         # FC+DY: 自由現金流量(D) + 期末普通股─現金股利 + 期末特別股─現金股利
-        factor_df['FCF+DY'] = df[i_list[9]] + df[i_list[16]] + df[i_list[17]]
+        factor_df['FCF_DY'] = df[i_list[9]] + df[i_list[16]] + df[i_list[17]]
         # OCF_E: 來自營運之現金流量 / 股東權益總額
         factor_df['OCF_E'] = df[i_list[18]] / df[i_list[2]]
         # FCFPS: 自由現金流量(D) / 流通在外股數(千股)

@@ -41,12 +41,12 @@ class Factor:
         temp_factor_df = temp_factor_df.set_index('date')
         for fac in factor_list:
             # 每一個 ticker 的因子資料的column以這樣的方式命名 e.g. 1101_GVI
-            column_name_list.append(ticker+'_'+fac)
+            column_name_list.append("{}@{}".format(ticker, fac))
         temp_factor_df.columns = column_name_list
         return temp_factor_df
 
     def _get_all_factor_by_multithreading(self):
-        # 預載所有需要用到的因子
+        # 載入所有股票代號
         all_ticker_list = self._get_all_ticker()
 
         # 沒給參數預設會抓cup核心數 但本系統最多可能需要同時抓XX個因子故設定XX個執行緒
@@ -66,7 +66,7 @@ class Factor:
         for i in range(len(factor_list)):
             # 間隔抓出同一個factor
             temp_factor_df = all_factor_df.iloc[:, lambda df: range(i, all_factor_df.shape[1], len(factor_list))]
-            temp_factor_df.columns = [x.split('_')[0] for x in temp_factor_df.columns]
+            temp_factor_df.columns = [x.split('@')[0] for x in temp_factor_df.columns]
             factor_df_dict[factor_list[i]] = temp_factor_df
         return factor_df_dict
     

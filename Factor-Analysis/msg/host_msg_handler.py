@@ -85,7 +85,6 @@ class HostMsgHandler:
     #        userdata : 資料型態
     #        msg      : 訊息內容
     def _handle_status_update(self, client, userdata, msg):
-        # MQTT CallBack參數取出
         node_msg = self._phase_mqtt_msg(msg)
         print("[HostMsgHandler] get {} Status Check Respond".format(node_msg['node_name']))
         current_time = str(datetime.now())
@@ -123,8 +122,34 @@ class HostMsgHandler:
             status, row, result = self._dbmgr.update(sql, args)
             print("[HostMsgHandler] update node: {}".format(node_msg['node_name']))
 
+    # (Publish) 發送節點健康狀態確認訊息
+    def publish_health_check(self):
+        mqtt_client = self.client_ID + " HealthCheck"  # 設定節點名稱
+
+        # 送出狀態確認訊息，
+        payload = {
+            "message": "HealthCheck"
+        }
+        payload = json.dumps(payload)
+        publish.single(
+            qos=2,
+            keepalive=60,
+            payload=payload,
+            client_id=mqtt_client,
+            topic="Analysis/HealthCheck",
+            hostname=self._host_IP,
+            auth={
+                'username': self._mqtt_account,
+                'password': self._mqtt_password
+            }
+        )
+        print("[HostMsgHandler] Host Health Check.....")
+
+    # (CallBack) 處理健康狀態確認任務完成訊息
+    # input: client   : 發送訊息的節點ID
+    #        userdata : 資料型態
+    #        msg      : 訊息內容
     def _handle_health_update(self, client, userdata, msg):
-        # MQTT CallBack參數取出
         node_msg = self._phase_mqtt_msg(msg)
         current_time = str(datetime.now())
 
@@ -189,7 +214,6 @@ class HostMsgHandler:
         # MQTT CallBack參數取出
         node_msg = self._phase_mqtt_msg(msg)
         current_time = str(datetime.now())
-        print('node_msg: ', node_msg)
 
         sql = " UPDATE  `task_status` \
                 SET     `finish_time`=%(finish_time)s, `owner`=%(owner)s, `status`=%(status)s \

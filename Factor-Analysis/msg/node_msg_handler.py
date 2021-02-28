@@ -54,12 +54,15 @@ class NodeMsgHandler:
         # 將訂閱主題寫在 on_connect 中，當重新連線時將會重新訂閱
         client.subscribe("Analysis/FactorAnalysisTask", qos=2)
         client.subscribe("Analysis/StatusCheck", qos=2)
+        client.subscribe("Analysis/HealthCheck", qos=2)
 
     def _on_message(self, client, userdata, msg):
         if msg.topic == "Analysis/FactorAnalysisTask":
             self._handle_factor_analysis_task(client, userdata, msg)
         elif msg.topic == "Analysis/StatusCheck":
             self._status_receive(client, userdata, msg)
+        elif msg.topic == "Analysis/HealthCheck":
+            self._health_receive(client, userdata, msg)
 
     # (CallBack) 處理狀態確認訊息
     # input: client   : 發送訊息的節點ID
@@ -92,8 +95,16 @@ class NodeMsgHandler:
                     )
         print('%s publish status respond' % self.client_ID)
 
+    # (CallBack) 處理健康狀態確認訊息
+    # input: client   : 發送訊息的節點ID
+    #        userdata : 資料型態
+    #        msg      : 訊息內容
+    def _health_receive(self, client, userdata, msg):
+        print("Receive Health Check and Respond...")
+        self._publish_health_respond()
+
     # (Publish) 回傳節點系統狀態
-    def publish_health_respond(self):
+    def _publish_health_respond(self):
         mqtt_client = self.client_ID + " HealthResponse"  # 設定節點名稱
 
         # 轉換Json格式

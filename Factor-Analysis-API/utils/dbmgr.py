@@ -15,6 +15,9 @@ class DBMgr:
         self._db_data['db'] = db
         self._conn()
 
+    def get_conn(self):
+        return self._connection
+
     def _mysql_error(self):
         return pymysql.MySQLError
 
@@ -26,7 +29,8 @@ class DBMgr:
                 passwd=self._db_data['passwd'],
                 db=self._db_data['db'],
                 charset=self._db_data['charset'],
-                cursorclass=pymysql.cursors.DictCursor)
+                cursorclass=pymysql.cursors.DictCursor
+            )
             self._state = True
             return self._connection
 

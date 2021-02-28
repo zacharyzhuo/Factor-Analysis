@@ -1,8 +1,4 @@
 import pandas as pd
-import numpy as np
-import datetime
-# import sys
-# sys.path.append("../")
 from utils.dbmgr import DBMgr
 from utils.config import Config
 
@@ -11,46 +7,33 @@ class CalendarWriter:
 
     def __init__(self):
         self._cfg = Config()
-        self._dbmgr = DBMgr()
-
         self._path = self._cfg.get_value('path', 'path_to_share_folder')
 
+        self._dbmgr = DBMgr(db='calendar')
+
+        df = self._read_file()
+        self._write_data_to_db(df)
+
     def _read_file(self):
-        calendar_dict = {}
-        
-        df = pd.read_excel(row_data_path[0]+country_list[0]+'_calendar.xlsx')
+        df = pd.read_excel(self._path+'calendar/tw_calendar.xlsx')
         df = df[['年月日']].sort_values(by='年月日').reset_index(drop=True)
         df.columns = ['date']
-        calendar_dict[country_list[0]] = df
-        return calendar_dict
+        return df
 
-# """
-# tej smart wizard
-# 股價資料庫
-# 資料格式: 預設
-# """
+    def _write_data_to_db(self, df):
+        # 不知道為啥create table & insert要分開來寫才行
+        sql = " drop table if exists `tw`;"
+        args = {}
+        status, row, result = self._dbmgr.insert(sql, args)
 
-# row_data_path = ['../data/raw_data/calendar/']
-# country_list = ['tw']
-
-# mydb = ConnMysql()
-# db_name = ['stock', 'stock_index', 'indicator', 'factor', 'ranked_factor', 'calendar']
-
-
-# def write_tw_calendar():
-#     calendar_dict = {}
-#     df = pd.read_excel(row_data_path[0]+country_list[0]+'_calendar.xlsx')
-#     df = df[['年月日']].sort_values(by='年月日').reset_index(drop=True)
-#     df.columns = ['date']
-#     calendar_dict[country_list[0]] = df
-#     return calendar_dict
-
-# def write_data_to_mysql(db_name, calendar_dict):
-#     conn = mydb.connect_db(db_name)
-#     for key, value in calendar_dict.items():
-#         value.to_sql(key, con=conn)
-#         print('successfully write '+key+' to db')
-
-
-# calendar_dict = write_tw_calendar()
-# write_data_to_mysql(db_name[5], calendar_dict)
+        sql = " CREATE TABLE `tw`( \
+                `id` int(5) PRIMARY KEY AUTO_INCREMENT NOT NULL, \
+                `date` datetime COLLATE utf8mb4_unicode_ci \
+                )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        args = {}
+        status, row, result = self._dbmgr.insert(sql, args)
+                
+        sql = " INSERT INTO `tw` \
+                VALUES      ('0', %(date)s)"
+        args = df.to_dict('records')
+        status, row, result = self._dbmgr.insert(sql, args, multiple=True)

@@ -5,10 +5,9 @@ import sys
 import math
 sys.path.append("../")
 from utils.db import ConnMysql
+from utils.config import Config
 
 
-row_data_path = ['../data/raw_data/stock/', '../data/raw_data/stock_index/', '../data/raw_data/indicator/']
-processed_data_path = ['../data/processed_data/stock/', '../data/processed_data/stock_index/', '../data/processed_data/indicator/']
 company_type = ['上市', '上櫃']
 stock_price_type = ['開盤價', '最高價', '最低價', '收盤價', '成交量', '流通在外股數']
 stock_columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'outstanding_share']
@@ -18,6 +17,30 @@ date_list = ['20000101-20051231', '20060101-20101231',
 mydb = ConnMysql()
 db_name = ['stock', 'stock_index', 'indicator']
 
+config = Config()
+path = config.get_value('path', 'path_to_share_folder')
+path = path + 'stock/'
+
+
+def proc_stk_data():
+    for i in range(len(company_type)):
+        for j in range(len(stock_price_type)):
+            df = pd.read_excel("{}raw_data/{}_{}_{}.xlsx".format(
+                path, company_type[i], stock_price_type[j], date_list[0]))
+            df = df.iloc[1:]
+            for k in range(1, len(date_list)):
+                temp_df = pd.read_excel("{}raw_data/{}_{}_{}.xlsx".format(
+                    path, company_type[i], stock_price_type[j], date_list[k]))
+                temp_df = temp_df.iloc[1:]
+                df = df.append(temp_df)
+            df.rename(columns={'Unnamed: 0': 'date'}, inplace=True)
+            df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d").astype(str)
+            df = df.sort_values(by=['date'])
+            df = df.set_index('date')
+            df.to_csv("{}processed_data/{}_{}_20000101-20201231.csv".format(
+                path, company_type[i], stock_price_type[j]),
+                header=True, encoding="utf_8_sig")
+            print("successfully write to csv")
 
 def trans_stk_price(value):
     if value < 10:
@@ -66,32 +89,12 @@ def trans_stk_price(value):
         value = float(value_list)
     return value
 
-def proc_stk_data():
-    for i in range(len(company_type)):
-        for j in range(len(stock_price_type)):
-            df = pd.read_excel(
-                row_data_path[0]+company_type[i]+'_'+stock_price_type[j]+'_'+date_list[0]+'.xlsx')
-            df = df.iloc[1:]
-            for k in range(1, len(date_list)):
-                temp_df = pd.read_excel(
-                    row_data_path[0]+company_type[i]+'_'+stock_price_type[j]+'_'+date_list[k]+'.xlsx')
-                temp_df = temp_df.iloc[1:]
-                df = df.append(temp_df)
-            df.rename(columns={'Unnamed: 0': 'date'}, inplace=True)
-            df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d").astype(str)
-            df = df.sort_values(by=['date'])
-            df = df.set_index('date')
-            df.to_csv(processed_data_path[0]+company_type[i]+'_'+stock_price_type[j] +
-                      '_20000101-20201231.csv', header=True, encoding="utf_8_sig")
-            print("successfully write to csv")
-
 def trans_stk_to_one_symbol():
     ticker_dict = {}
     for i in range(len(company_type)):
         stock_price_type_arr = []
         for j in range(len(stock_price_type)):
-            df = pd.read_csv(
-                processed_data_path[0]+company_type[i]+'_'+stock_price_type[j]+'_20000101-20201231.csv')
+            df = pd.read_csv("{}processed_data/{}_{}_20000101-20201231.csv".format(path, company_type[i], stock_price_type[j]))
             columns_name = df.columns
             length = len(columns_name)
             stock_price_type_arr.append(df)
@@ -127,5 +130,6 @@ def write_data_to_mysql(db_name, ticker_dict):
 write stock data
 """
 # proc_stk_data()
-ticker_dict = trans_stk_to_one_symbol()
-write_data_to_mysql(db_name[0], ticker_dict)
+
+# ticker_dict = trans_stk_to_one_symbol()
+# write_data_to_mysql(db_name[0], ticker_dict)
