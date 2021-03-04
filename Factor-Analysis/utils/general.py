@@ -7,8 +7,8 @@ class General:
         pass
 
     @staticmethod
-    def combinate_parameter(factor_list, strategy_list, group_list, position_list):
-        data = factor_list, strategy_list, group_list, position_list
+    def combinate_parameter(factor_list, strategy_list, date_2, date_3, order=[0, 1, 2, 3]):
+        data = factor_list, strategy_list, date_2, date_3
         task_list = []
         for x, y, z, w in product(*data):
             # 單因子不能執行策略 1

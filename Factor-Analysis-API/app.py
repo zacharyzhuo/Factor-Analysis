@@ -1,7 +1,5 @@
 from flask import Flask, app
 from flask_restful import Api
-
-# local packages
 from api import routes
 
 # default mongodb configuration

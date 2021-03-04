@@ -7,15 +7,20 @@ from service.factor import Factor
 from modules.my_asset import MyAsset
 
 
+# factor_list = [
+#     ['FCF_P', 'CROIC'], ['EV_EBITDA', 'ROIC'], ['FCF_P', 'EPS'], ['EV_EBITDA', 'FCF_OI'],
+#     ['FCF_P', 'MOM_7m'], ['EV_S', 'MOM_7m'], ['MOM_52w_PR', 'FCF_P'], ['MOM_52w_PR', 'P_B']
+# ]
 factor_list = [
-    ['FCF_P', 'CROIC'], ['EV_EBITDA', 'ROIC'], ['FCF_P', 'EPS'], ['EV_EBITDA', 'FCF_OI'],
-    ['FCF_P', 'MOM_7m'], ['EV_S', 'MOM_7m'], ['MOM_52w_PR', 'FCF_P'], ['MOM_52w_PR', 'P_B']
+    ['FCF_DY', 'ROE']
 ]
 request = {
     "factor_list": factor_list,
-    "strategy_list": [0, 1, 2, 3],
-    "group_list": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "position_list": [5, 10, 15, 30, 90, 150],
+    # "strategy_list": [0, 1, 2, 3],
+    "strategy_list": [3],
+    # "group_list": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "group_list": [8, 9, 10],
+    "position_list": [90, 150],
     "n_season": 0,
 }
 
