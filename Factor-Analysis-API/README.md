@@ -62,7 +62,7 @@ response = requests.get(server_ip+"stk/get_ticker_all_stk", params=payloads)
 date = json.loads(response.text)['result']
 
 get stock price of one ticker during the selected period
-http://140.115.87.197:8090/stk/get_ticker_period_stk?ticker_list=1101&ticker_list=1102&date=20000101-20000202
+http://140.115.87.197:8090/stk/get_ticker_period_stk?ticker_list=1101&ticker_list=1102&start_date=2000-03-22&end_date=2018-03-22
 
 payloads = {
     'ticker_list': ['1101', '1102'],
@@ -150,7 +150,7 @@ response = requests.get(server_ip+"fac/get_ticker_all_fac", params=payloads)
 date = json.loads(response.text)['result']
 
 get selected factor data of one ticker
-http://140.115.87.197:8090/fac/get_ticker_fac?ticker=1101&field=GVI&field=MOM&field=PE
+http://140.115.87.197:8090/fac/get_ticker_fac?ticker=1101&field=GVI&field=PE
 
 payloads = {
     'ticker': '1101',
@@ -160,7 +160,7 @@ response = requests.get(server_ip+"fac/get_ticker_fac", params=payloads)
 date = json.loads(response.text)['result']
 
 get selected factor data of all ticker at selected date
-http://140.115.87.197:8090/fac/get_date_fac?date=2020-09-30&field=GVI&field=MOM&field=PE
+http://140.115.87.197:8090/fac/get_date_fac?date=2020-09-30&field=GVI&field=PE
 
 payloads = {
     'date': '2020-03-22',

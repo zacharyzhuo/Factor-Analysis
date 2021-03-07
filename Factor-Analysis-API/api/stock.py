@@ -3,19 +3,39 @@ from flask import jsonify
 from flask_restful import Resource
 from flask_restful import request
 from datetime import datetime
-from utils.db import ConnMysql
+from utils.dbmgr import DBMgr
 
 
-mydb = ConnMysql()
-db_name = "stock"
-conn = mydb.connect_db(db_name)
+DB_NAME = 'stock'
+
+
+class ConnDB:
+
+    def __init__(self):
+        self.dbmgr = DBMgr(db=DB_NAME)
 
 
 class StkListApi(Resource):
 
     def get(self):
-        table_name_list = conn.table_names()
-        return jsonify({"result": table_name_list})
+        try:
+            # 抓該資料庫底下的所有table名稱
+            sql = " SELECT TABLE_NAME \
+                    FROM INFORMATION_SCHEMA.TABLES \
+                    WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA='{}'".format(DB_NAME)
+            args = {}
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+            
+            table_list = []
+            for value in result:
+                table_list.append(value['TABLE_NAME'])
+
+            return jsonify({"result": table_list})
+
+        except Exception as e:
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
+            pass
 
 
 class StkByTickerApi(Resource):
@@ -24,20 +44,20 @@ class StkByTickerApi(Resource):
         output = {}
         try:
             ticker_list = request.args.getlist('ticker_list')
+
             for ticker in ticker_list:
                 sql = "SELECT * FROM `{}`".format(ticker)
-                stks = conn.execute(sql)
-                ticker_data_list = []
-                if stks:
-                    for stk in stks:
-                        stk_dict = dict(stk)
-                        del stk_dict["index"]
-                        ticker_data_list.append(stk_dict)
-                output[ticker] = ticker_data_list
+                args = {}
+                status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+
+                output[ticker] = result
+
+            return jsonify({"result": output})
+
         except Exception as e:
-            output = "No such ticker"
-            print(e)
-        return jsonify({"result": output})
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
+            pass
 
 
 class StkByTickerDateApi(Resource):
@@ -46,27 +66,22 @@ class StkByTickerDateApi(Resource):
         output = {}
         try:
             ticker_list = request.args.getlist('ticker_list')
-            date = request.args.get('date')
-            date = date.split("-")
-            start_date = date[0]
-            end_date = date[1]
-            dates_list = pd.date_range(start_date, end_date).tolist()
-            dates_list = [date_obj.strftime("%Y-%m-%d")
-                          for date_obj in dates_list]
+            start_date = request.args.get('start_date')
+            end_date = request.args.get('end_date')
+
             for ticker in ticker_list:
-                sql = "SELECT * FROM `{}`".format(ticker)
-                stks = conn.execute(sql)
-                ticker_data_list = []
-                if stks:
-                    for stk in stks:
-                        stk_dict = dict(stk)
-                        if stk_dict["date"] in dates_list:
-                            del stk_dict["index"]
-                            ticker_data_list.append(stk_dict)
-                output[ticker] = ticker_data_list
+                # 抓限定時間範圍內股價
+                sql = " SELECT * FROM `{}` \
+                        WHERE `date` >= %(start_date)s \
+                        AND `date` <= %(end_date)s".format(ticker)
+                args = {'start_date': start_date, 'end_date': end_date}
+                status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+
+                output[ticker] = result
+
+            return jsonify({"result": output})
+
         except Exception as e:
-            output = "Please enter the correct date range format. \
-                    (e.g. 20190322-20200322) Note: earliest date 20000101; latest date 20201101"
-            print(e)
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": output})

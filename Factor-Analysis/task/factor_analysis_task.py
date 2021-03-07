@@ -4,8 +4,7 @@ from utils.dbmgr import DBMgr
 from utils.general import General
 from service.calendar import Calendar
 from service.factor import Factor
-from modules.my_asset import MyAsset
-from analysis.analysis import Analysis
+from package.my_asset import MyAsset
 
 
 class FactorAnalysisTask:

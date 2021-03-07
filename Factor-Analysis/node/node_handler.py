@@ -69,15 +69,6 @@ class NodeHandler:
         }
         status, row, result = self._dbmgr.update(sql, args)
 
-    def calculate_computing_ability(self, node):
-        node_name = node['name']  # Node名稱
-        node_core_num = float(node['core_num'])  # Node核心數
-        node_cpu_status = float(node['cpu_status'])  # Node處理器使用率
-        # 計算節點計算能力: ( 1 - ( CPU使用狀況/100) ) * 核心數量
-        computing_ability = int((1 - node_cpu_status / 100) * node_core_num)
-        print('computing_ability: ', computing_ability)
-        return computing_ability
-
     def distribute_batch_task(self, task_num, node_num):
         # 將任務平分給各個節點 未整除的部分都給最後一個節點
         batch_task_num = task_num // node_num

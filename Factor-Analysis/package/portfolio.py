@@ -1,0 +1,73 @@
+import pandas as pd
+import numpy as np
+import datetime
+import requests
+import json
+import pathos
+from multiprocessing import Pool
+from backtesting import Backtest, Strategy
+from utils.config import Config
+from package.window import Window
+
+
+class Portfolio:
+
+    def __init__(self, strategy_config, cal, fac):
+        self._strategy_config = strategy_config
+        self._cal = cal
+        self._fac = fac
+        
+        self._cfg = Config()
+
+        self._window_config = {
+            'strategy': strategy_config['strategy'],
+            'factor_list': strategy_config['factor_list'],
+            'n_season': strategy_config['n_season'],
+            'group': strategy_config['group'],
+            'position': strategy_config['position'],
+            'start_date': strategy_config['start_date'],
+            'end_date': strategy_config['end_date'],
+            'cash': strategy_config['start_equity'],
+            'if_first': True,
+            'performance_df': None,
+            'equity_df': None,
+        }
+        self._report_date_list = cal.get_report_date_list(
+            self._window_config['start_date'], self._window_config['end_date']
+        )
+        self._slide_window()
+
+    def _slide_window(self):
+        print('[Portfolio]: running sliding window...')
+
+        for t2_period in self._get_t2_period(self._report_date_list):
+            my_window = Window(
+                self._window_config, t2_period, self._cal, self._fac
+            )
+            self._window_config = my_window.window_config
+            # break
+
+    def _get_t2_period(self, report_date_list):
+        window_period_list = []
+
+        for i in range(len(report_date_list)+1):
+            if i == 0:
+                date = self._cal.get_trade_date(self._window_config['start_date'], 0, 'd')
+                window_period_list.append(
+                    [date, report_date_list[i]]
+                )
+            elif i == len(report_date_list):
+                date = self._cal.get_trade_date(self._window_config['end_date'], -1, 'd')
+                window_period_list.append(
+                    [report_date_list[i-1], date]
+                )
+            else:
+                window_period_list.append(
+                    [report_date_list[i-1], report_date_list[i]]
+                )
+        return window_period_list
+    
+    def get_performance_data(self):
+        return self._window_config['performance_df'], self._window_config['equity_df']
+
+    

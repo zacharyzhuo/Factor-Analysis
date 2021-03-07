@@ -11,8 +11,6 @@ class BuyAndHold(Strategy):
         super().init()
 
     def next(self):
-        super().next()
-
         today = self.data.index[-1].strftime('%Y-%m-%d')
         
         if today in self._buy_list:

@@ -5,30 +5,31 @@ from flask import jsonify
 from flask_restful import Resource
 from flask_restful import request
 from datetime import datetime, timedelta
-from utils.db import ConnMysql
+from dateutil.relativedelta import relativedelta
+from utils.dbmgr import DBMgr
 
 
-mydb = ConnMysql()
-db_name = "calendar"
-conn = mydb.connect_db(db_name)
+DB_NAME = 'calendar'
+SEASON_MONTH = [3, 6, 9, 12]
+
 
 class Calendar:
 
     def __init__(self, country):
         self.country = country
+
+        self._dbmgr = DBMgr(db=DB_NAME)
+
         self.df = self.read_calendar()
 
     def read_calendar(self):
-        try:
-            sql = "SELECT * FROM `{}`".format(self.country)
-            cals = conn.execute(sql)
-            df = pd.DataFrame(cals.fetchall())
-            df.columns = cals.keys()
-            df = df.drop(columns=['index'])
-            return df
-        except Exception as e:
-            print(e)
+        sql = "SELECT * FROM `{}`".format(self.country)
+        args = {}
+        status, row, result = self._dbmgr.query(sql, args, fetch='all')
+        df = pd.DataFrame(result)
+        df = df.drop(columns=['index'])
 
+        return df
 
 class AllTradeDateApi(Resource):
 
@@ -37,10 +38,13 @@ class AllTradeDateApi(Resource):
             country = request.args.get('country')
             df = Calendar(country).df
             date_list = df['date'].dt.strftime('%Y-%m-%d').tolist()
+
+            return jsonify({"result": date_list})
+
         except Exception as e:
-            print(e)
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": date_list})
 
 
 class TradeDateApi(Resource):
@@ -49,112 +53,92 @@ class TradeDateApi(Resource):
         try:
             country = request.args.get('country')
             date = request.args.get('date')
-            how = request.args.get('how')
-            freq = request.args.get('freq')
+            how = int(request.args.get('how'))
+            freq = request.args.get('freq').lower()
 
             df = Calendar(country).df
-            how = (abs(int(how)) + 1) *-1
-            freq = freq.lower()
             if type(date) is str:
                 date = datetime.strptime(date, "%Y-%m-%d")
+
+            # 歷史資料最早的那天
             start_date = df['date'].iloc[0]
-            date_df = df.loc[df['date'] <= date]
-            selected_date = date_df['date'].iloc[-1]
+
+            date_df = df.loc[df['date'] <= date] if how < 0 else df.loc[df['date'] >= date]
 
             if freq == 'd':
-                output_date = date_df.iloc[how]
-
-            elif freq == 'm':
-                result_df = pd.DataFrame()
-                for i in range(start_date.year, selected_date.year + 1):
-                    for j in range(1, 13):
-                        selected_date_add_one_day = (selected_date + timedelta(days=1)).strftime('%Y-%m-%d')
-                        org_month = selected_date.strftime('%Y-%m-%d').split("-")[1]
-                        add_one_day_month = selected_date_add_one_day.split("-")[1]
-                        if i == selected_date.year and selected_date.month < j:
-                            pass
-                        elif i == selected_date.year and selected_date.month == j and org_month == add_one_day_month:
-                            pass
-                        else:
-                            if j == 12:
-                                dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                            else:
-                                dt_end = (datetime(i, j+1, 1) - timedelta(days=1)).strftime("%Y-%m-%d")
-                            month_end_df = date_df.loc[date_df['date'] <= dt_end]
-                            month_end = month_end_df.iloc[-1]
-                            result_df = result_df.append(month_end, ignore_index=True)
-                output_date = result_df.iloc[how]
+                return jsonify({"result": date_df.iloc[how]['date'].strftime('%Y-%m-%d')})
 
             elif freq == 's':
-                result_df = pd.DataFrame()
-                season_month = [3, 6, 9, 12]
-                for i in range(start_date.year, selected_date.year + 1):
-                    for j in season_month:
-                        if i == selected_date.year and selected_date.month < j:
-                            pass
-                        else:
-                            if j == 12:
-                                dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                            else:
-                                dt_end = (datetime(i, j+1, 1) - timedelta(days=1)).strftime("%Y-%m-%d")
-                            season_end_df = date_df.loc[date_df['date'] <= dt_end]
-                            season_end = season_end_df.iloc[-1]
-                            result_df = result_df.append(season_end, ignore_index=True)
-                output_date = result_df.iloc[how]
+                year = date.year
 
-            elif freq == 'y':
-                result_df = pd.DataFrame()
-                for i in range(start_date.year, selected_date.year + 1):
-                    if i == selected_date.year:
-                        pass
+                # 往前
+                if how < 0:
+                    # 往前找最接近的 3 6 9 12
+                    temp_list = [season for season in SEASON_MONTH if season < date.month]
+
+                    # 如果月份=1或2 也就是最接近的是去前的12月
+                    if len(temp_list) == 0:
+                        year = year - 1
+                        month = 12
                     else:
-                        dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                        year_end_df = date_df.loc[date_df['date'] <= dt_end]
-                        year_end = year_end_df.iloc[-1]
-                        result_df = result_df.append(year_end, ignore_index=True)
-                output_date = result_df.iloc[how]
+                        month = temp_list[-1]
+                    # 季=3*月 要少扣一個月 因為要用隔月的1號-1天去抓該月的月底
+                    temp_date = datetime(year, month, 1) - relativedelta(months=3*abs(how+1)-1)
+                    closest_season_date = (temp_date-timedelta(days=1)).strftime("%Y-%m-%d")
+                    closest_season_df = df.loc[df['date'] <= closest_season_date]
+                    closest_season_date = closest_season_df['date'].iloc[-1]
+                # 往後 或=0
+                else:
+                    # 往前找最接近的 3 6 9 12
+                    temp_list = [season for season in SEASON_MONTH if season > date.month]
+                    month = temp_list[0]
 
-            output_date = output_date['date'].strftime('%Y-%m-%d')
+                    # 季=3*月 要多加一個月 因為要用隔月的1號-1天去抓該月的月底
+                    temp_date = datetime(year, month, 1) + relativedelta(months=3*(how-1)+1)
+                    closest_season_date = (temp_date-timedelta(days=1)).strftime("%Y-%m-%d")
+                    closest_season_df = df.loc[df['date'] >= closest_season_date]
+                    closest_season_date = closest_season_df['date'].iloc[0]
+                
+                return jsonify({"result": closest_season_date.strftime('%Y-%m-%d')})
+
         except Exception as e:
-            print(e)
-            output_date = e
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": output_date})
 
 
-class ReportDateApi(Resource):
+class ReportDateListApi(Resource):
     
     def get(self):
         try:
             report_date_list = ['05-15', '08-14', '11-14', '03-31']
             country = request.args.get('country')
-            date = request.args.get('date')
+            start_date = request.args.get('start_date')
+            end_date = request.args.get('end_date')
 
             df = Calendar(country).df
-            if type(date) is str:
-                date = datetime.strptime(date, "%Y-%m-%d")
-            year = date.year
-            momth = date.month
-            for i in range(len(report_date_list)):
-                if i == 3 and momth > 3:
-                    report_date_list[i] = str(year+1) + "-" + report_date_list[i]
-                else:
-                    report_date_list[i] = str(year) + "-" + report_date_list[i]
-                report_date_list[i] = datetime.strptime(report_date_list[i], "%Y-%m-%d")
-                if df['date'].iloc[-1] < report_date_list[i]:
-                    report_date_list[i] = None
-                else:
-                    report_date_df = df.loc[df['date'] <= report_date_list[i]]
-                    report_date_list[i] = report_date_df['date'].iloc[-1]
-                
-            report_date_list = list(filter(None, report_date_list))
-            report_date_list.sort()
-            for elm in report_date_list:
-                if date < elm:
-                    output_date = elm
-                    break
-            output_date = output_date.strftime('%Y-%m-%d')
+
+            if type(start_date) is not str:
+                start_date = start_date.strftime('%Y-%m-%d')
+            if type(end_date) is not str:
+                end_date = end_date.strftime('%Y-%m-%d')
+            start_year = int(start_date.split('-')[0])
+            end_year = int(end_date.split('-')[0])
+
+            date_list = []
+            for year in range(start_year, end_year+1):
+                for report_date in report_date_list:
+                    date = str(year) + '-' + report_date
+                    report_date_df = df.loc[df['date'] <= date]
+                    date = report_date_df['date'].iloc[-1]
+                    date = date.strftime('%Y-%m-%d')
+                    # 需要在給定的期間內才append
+                    if date >= start_date and date <= end_date:
+                        date_list.append(date)
+
+            return jsonify({"result": date_list})
+
         except Exception as e:
-            print(e)
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": output_date})

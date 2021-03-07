@@ -7,7 +7,7 @@ class General:
         pass
 
     @staticmethod
-    def combinate_parameter(factor_list, strategy_list, date_2, date_3, order=[0, 1, 2, 3]):
+    def combinate_parameter(factor_list, strategy_list, date_2, date_3):
         data = factor_list, strategy_list, date_2, date_3
         task_list = []
         for x, y, z, w in product(*data):

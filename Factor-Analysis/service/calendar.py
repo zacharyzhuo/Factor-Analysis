@@ -3,7 +3,11 @@ import numpy as np
 import requests
 import json
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from utils.config import Config
+
+
+SEASON_MONTH = [3, 6, 9, 12]
 
 
 class Calendar:
@@ -27,127 +31,96 @@ class Calendar:
         date_df['date'] = pd.to_datetime(date_df['date'], format="%Y-%m-%d")
         return date_df
 
-    # 往前抓交易日
+    # 往前或往後抓交易日
     # input: date   : 以某天為基準
-    #        how    : 往前數多少單位
-    #        freq   : (顆粒度) d:日 m:月 s:季 y:年
-    def advance_date(self, date, how, freq):
+    #        how    : 負數往前 正數往後
+    #        freq   : d:日 s:季 
+    def get_trade_date(self, date, how, freq):
         df = self._date_df
-        how = (abs(int(how)) + 1) *-1
-        freq = freq.lower()
         if type(date) is str:
             date = datetime.strptime(date, "%Y-%m-%d")
+        freq = freq.lower()
         # 歷史資料最早的那天
         start_date = df['date'].iloc[0]
-        # 抓出比參數(date)更早或等於的交易日
-        date_df = df.loc[df['date'] <= date]
-        # 最接近參數(date)的交易日
-        selected_date = date_df['date'].iloc[-1]
+
+        date_df = df.loc[df['date'] <= date] if how < 0 else df.loc[df['date'] >= date]
 
         if freq == 'd':
-            result_date = date_df.iloc[how]
-
-        elif freq == 'm':
-            result_df = pd.DataFrame()
-            for i in range(start_date.year, selected_date.year + 1):
-                for j in range(1, 13):
-                    selected_date_add_one_day = (selected_date + timedelta(days=1)).strftime('%Y-%m-%d')
-                    org_month = selected_date.strftime('%Y-%m-%d').split("-")[1]
-                    add_one_day_month = selected_date_add_one_day.split("-")[1]
-                    if i == selected_date.year and selected_date.month < j:
-                        pass
-                    elif i == selected_date.year and selected_date.month == j and org_month == add_one_day_month:
-                        pass
-                    else:
-                        if j == 12:
-                            dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                        else:
-                            dt_end = (datetime(i, j+1, 1) - timedelta(days=1)).strftime("%Y-%m-%d")
-                        month_end_df = date_df.loc[date_df['date'] <= dt_end]
-                        month_end = month_end_df.iloc[-1]
-                        result_df = result_df.append(month_end, ignore_index=True)
-            result_date = result_df.iloc[how]
+            return date_df.iloc[how]['date'].strftime('%Y-%m-%d')
 
         elif freq == 's':
-            result_df = pd.DataFrame()
-            season_month = [3, 6, 9, 12]
-            for i in range(start_date.year, selected_date.year + 1):
-                for j in season_month:
-                    if i == selected_date.year and selected_date.month < j:
-                        pass
-                    else:
-                        if j == 12:
-                            dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                        else:
-                            dt_end = (datetime(i, j+1, 1) - timedelta(days=1)).strftime("%Y-%m-%d")
-                        season_end_df = date_df.loc[date_df['date'] <= dt_end]
-                        season_end = season_end_df.iloc[-1]
-                        result_df = result_df.append(season_end, ignore_index=True)
-            result_date = result_df.iloc[how]
+            year = date.year
 
-        elif freq == 'y':
-            result_df = pd.DataFrame()
-            for i in range(start_date.year, selected_date.year + 1):
-                if i == selected_date.year:
-                    pass
+            # 往前
+            if how < 0:
+                # 往前找最接近的 3 6 9 12
+                temp_list = [season for season in SEASON_MONTH if season < date.month]
+
+                # 如果月份=1或2 也就是最接近的是去前的12月
+                if len(temp_list) == 0:
+                    year = year - 1
+                    month = 12
                 else:
-                    dt_end = (datetime(i, 12, 31)).strftime("%Y-%m-%d")
-                    year_end_df = date_df.loc[date_df['date'] <= dt_end]
-                    year_end = year_end_df.iloc[-1]
-                    result_df = result_df.append(year_end, ignore_index=True)
-            result_date = result_df.iloc[how]
+                    month = temp_list[-1]
+                # 季=3*月 要少扣一個月 因為要用隔月的1號-1天去抓該月的月底
+                temp_date = datetime(year, month, 1) - relativedelta(months=3*abs(how+1)-1)
+                closest_season_date = (temp_date-timedelta(days=1)).strftime("%Y-%m-%d")
+                closest_season_df = df.loc[df['date'] <= closest_season_date]
+                closest_season_date = closest_season_df['date'].iloc[-1]
+            # 往後 或=0
+            else:
+                # 往前找最接近的 3 6 9 12
+                temp_list = [season for season in SEASON_MONTH if season > date.month]
+                month = temp_list[0]
 
-        result_date = result_date['date'].strftime('%Y-%m-%d')
-        return result_date    
+                # 季=3*月 要多加一個月 因為要用隔月的1號-1天去抓該月的月底
+                temp_date = datetime(year, month, 1) + relativedelta(months=3*(how-1)+1)
+                closest_season_date = (temp_date-timedelta(days=1)).strftime("%Y-%m-%d")
+                closest_season_df = df.loc[df['date'] >= closest_season_date]
+                closest_season_date = closest_season_df['date'].iloc[0]
+            
+            return closest_season_date.strftime('%Y-%m-%d')
 
     # 抓出指定日期內所有財報公布日
     # input: start_date   : 開始日
     #        end_date     : 結束日
     def get_report_date_list(self, start_date, end_date):
-        try:
-            report_date_list = ['03-31', '05-15', '08-14', '11-14']
-            df = self._date_df
-            date_list = []
+        report_date_list = ['03-31', '05-15', '08-14', '11-14']
+        df = self._date_df
+        date_list = []
 
-            if type(start_date) is not str:
-                start_date = start_date.strftime('%Y-%m-%d')
-            if type(end_date) is not str:
-                end_date = end_date.strftime('%Y-%m-%d')
-            start_year = int(start_date.split('-')[0])
-            end_year = int(end_date.split('-')[0])
+        if type(start_date) is not str:
+            start_date = start_date.strftime('%Y-%m-%d')
+        if type(end_date) is not str:
+            end_date = end_date.strftime('%Y-%m-%d')
+        start_year = int(start_date.split('-')[0])
+        end_year = int(end_date.split('-')[0])
 
-            for year in range(start_year, end_year+1):
-                for report_date in report_date_list:
-                    date = str(year) + '-' + report_date
-                    report_date_df = df.loc[df['date'] <= date]
-                    date = report_date_df['date'].iloc[-1]
-                    date = date.strftime('%Y-%m-%d')
-                    # 需要在給定的期間內才append
-                    if date >= start_date and date <= end_date:
-                        date_list.append(date)
-        except Exception as e:
-            print(e)
-            pass
+        for year in range(start_year, end_year+1):
+            for report_date in report_date_list:
+                date = str(year) + '-' + report_date
+                report_date_df = df.loc[df['date'] <= date]
+                date = report_date_df['date'].iloc[-1]
+                date = date.strftime('%Y-%m-%d')
+                # 需要在給定的期間內才append
+                if date >= start_date and date <= end_date:
+                    date_list.append(date)
         return date_list
 
     # 往前或者往後抓幾個財報公布日
     # input: date   : 基準日
     #        how    : 單位
     def get_report_date(self, date, how):
-        try:
-            if type(date) is not str:
-                date = date.strftime('%Y-%m-%d')
-            # 預設為資料庫歷史資料最大區間
-            report_date_list = self.get_report_date_list('2000-01-01', '2020-12-31')
-            result_list = []
-            for report_date in report_date_list:
-                if how < 0:
-                    if report_date < date:
-                        result_list.append(report_date)
-                else:
-                    if report_date >= date:
-                        result_list.append(report_date)
-        except Exception as e:
-            print(e)
-            pass
+        if type(date) is not str:
+            date = date.strftime('%Y-%m-%d')
+        # 預設為資料庫歷史資料最大區間
+        report_date_list = self.get_report_date_list('2000-01-01', '2020-12-31')
+        result_list = []
+        for report_date in report_date_list:
+            if how < 0:
+                if report_date < date:
+                    result_list.append(report_date)
+            else:
+                if report_date >= date:
+                    result_list.append(report_date)
         return result_list[how]

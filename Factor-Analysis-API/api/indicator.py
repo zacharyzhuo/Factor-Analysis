@@ -4,19 +4,39 @@ from flask import jsonify
 from flask_restful import Resource
 from flask_restful import request
 from datetime import datetime
-from utils.db import ConnMysql
+from utils.dbmgr import DBMgr
 
 
-mydb = ConnMysql()
-db_name = "indicator"
-conn = mydb.connect_db(db_name)
+DB_NAME = 'indicator'
+
+
+class ConnDB:
+
+    def __init__(self):
+        self.dbmgr = DBMgr(db=DB_NAME)
 
 
 class IndListApi(Resource):
 
     def get(self):
-        table_name_list = conn.table_names()
-        return jsonify({"result": table_name_list})
+        try:
+            # 抓該資料庫底下的所有table名稱
+            sql = " SELECT TABLE_NAME \
+                    FROM INFORMATION_SCHEMA.TABLES \
+                    WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA='{}'".format(DB_NAME)
+            args = {}
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+            
+            table_list = []
+            for value in result:
+                table_list.append(value['TABLE_NAME'])
+
+            return jsonify({"result": table_list})
+
+        except Exception as e:
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
+            pass
 
 
 class IndByTickerApi(Resource):
@@ -25,17 +45,17 @@ class IndByTickerApi(Resource):
         output = []
         try:
             ticker = request.args.get('ticker')
+
             sql = "SELECT * FROM `{}`".format(ticker)
-            inds = conn.execute(sql)
-            if inds:
-                for ind in inds:
-                    ind = dict(ind)
-                    del ind["index"]
-                    output.append(ind)
+            args = {}
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+            
+            return jsonify({"result": result})
+
         except Exception as e:
-            output = "No such ticker"
-            print(e)
-        return jsonify({"result": output})
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
+            pass
 
 
 class IndByTickerFeildApi(Resource):
@@ -44,23 +64,21 @@ class IndByTickerFeildApi(Resource):
         try:
             ticker = request.args.get('ticker')
             field = request.args.getlist('field')
+            # 將 field 變成中間以逗號間隔的字串
             field = [elm + ", " for elm in field]
             field[-1] = field[-1].split(",")[0]
             field = "".join(field)
+            
             sql = "SELECT date, {} FROM `{}`".format(field, ticker)
-            inds = conn.execute(sql)
-            output = []
-            if inds:
-                for ind in inds:
-                    output.append(dict(ind))
+            args = {}
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+            
+            return jsonify({"result": result})
+
         except Exception as e:
-            output = "Please enter the correct field. \
-                    (e.g. 銀行借款－非流動, 報酬率(季), 季底普通股市值, 收盤價(元), \
-                    本益比-TSE, 歸屬母公司淨利（損）, 每股淨值(B), 每股盈餘, 淨負債, \
-                    營業收入淨額, 稅前息前折舊前淨利, 股東權益總額, 自由現金流量(D), 負債及股東權益總額)"
-            print(e)
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": output})
 
 
 class IndByDateFeildApi(Resource):
@@ -69,30 +87,40 @@ class IndByDateFeildApi(Resource):
         try:
             date = request.args.get('date')
             field = request.args.getlist('field')
+            # 將 field 變成中間以逗號間隔的字串
             field = [elm + ", " for elm in field]
             field[-1] = field[-1].split(",")[0]
             field = "".join(field)
-            ticker_list = conn.table_names()
+
+            # 抓該資料庫底下的所有table名稱
+            sql = " SELECT TABLE_NAME \
+                    FROM INFORMATION_SCHEMA.TABLES \
+                    WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA='{}'".format(DB_NAME)
+            args = {}
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+            
+            table_list = []
+            for value in result:
+                table_list.append(value['TABLE_NAME'])
+
+            # 用 union all 把同一個日子的哪些因子從全部資料表撈出來
             sql = ""
-            for ticker in ticker_list:
-                if ticker != ticker_list[-1]:
+            for ticker in table_list:
+                if ticker != table_list[-1]:
                     sql += "SELECT {} FROM `{}` WHERE date = '{}' union all ".format(field, ticker, date)
                 else:
                     sql += "SELECT {} FROM `{}` WHERE date = '{}'".format(field, ticker, date)
-            inds = conn.execute(sql)
+            status, row, result = ConnDB().dbmgr.query(sql, args, fetch='all')
+
+            # 因為資料表中沒有存股票編號 所以需要手動塞進去
             output = []
-            if inds:
-                i = 0
-                for ind in inds:
-                    ind_dict = dict(ind)
-                    ind_dict['ticker'] = ticker_list[i]
-                    output.append(ind_dict)
-                    i += 1
+            for i, elm in enumerate(result):
+                elm['ticker'] = table_list[i]
+                output.append(elm)
+
+            return jsonify({"result": output})
+
         except Exception as e:
-            output = "Please enter the correct field. \
-                    (e.g. 銀行借款－非流動, 報酬率(季), 季底普通股市值, 收盤價(元), \
-                    本益比-TSE, 歸屬母公司淨利（損）, 每股淨值(B), 每股盈餘, 淨負債, \
-                    營業收入淨額, 稅前息前折舊前淨利, 股東權益總額, 自由現金流量(D), 負債及股東權益總額)"
-            print(e)
+            print("[Error]: {}".format(e))
+            return jsonify({"Error": e})
             pass
-        return jsonify({"result": output})

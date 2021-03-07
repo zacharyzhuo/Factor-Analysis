@@ -12,8 +12,7 @@ from utils.dbmgr import DBMgr
 from task.factor_analysis_task import FactorAnalysisTask
 from service.calendar import Calendar
 from service.factor import Factor
-from modules.my_asset import MyAsset
-from analysis.analysis import Analysis
+from package.my_asset import MyAsset
 
 
 class NodeMsgHandler:
