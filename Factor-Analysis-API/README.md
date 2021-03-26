@@ -13,7 +13,7 @@ server_ip = "http://140.115.87.197:8090/"
 # api usage
 <!-- calendar -->
 get trade day
-http://140.115.87.197:8090/cal?country=TW&date=2010-03-22&how=3&freq=m
+http://140.115.87.197:8090/cal?country=TW&date=2010-03-22&how=3&freq=s
 
 payloads = {
     'country': 'TW',

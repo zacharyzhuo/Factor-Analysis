@@ -25,24 +25,26 @@ class Factor:
     def _get_all_ticker(self):
         response = requests.get("http://{}/fac/stk_list".format(self._api_server_IP))
         all_ticker_list = json.loads(response.text)['result']
+
         return all_ticker_list
     
     def _get_factor(self, ticker):
-        factor_list = self._factor_list
-        
         payloads = {
             'ticker': ticker,
-            'field': factor_list,
+            'field': self._factor_list,
         }
         response = requests.get("http://{}/fac/get_ticker_fac".format(self._api_server_IP), params=payloads)
         fac_dict = json.loads(response.text)['result']
+
         column_name_list = []
         temp_factor_df = pd.DataFrame(fac_dict)
         temp_factor_df = temp_factor_df.set_index('date')
-        for fac in factor_list:
+
+        for fac in self._factor_list:
             # 每一個 ticker 的因子資料的column以這樣的方式命名 e.g. 1101_GVI
             column_name_list.append("{}@{}".format(ticker, fac))
         temp_factor_df.columns = column_name_list
+
         return temp_factor_df
 
     def _get_all_factor_by_multithreading(self):
@@ -55,19 +57,22 @@ class Factor:
         results = pool.map(self._get_factor, all_ticker_list)
         pool.close()
         pool.join()
+
         return results
 
     def _proc_factor_df(self, factor_df_list):
         # 將各個df以index(date)再以列合併
         all_factor_df = pd.concat(factor_df_list, axis=1)
-        factor_list = self._factor_list
         factor_df_dict = {}
 
-        for i in range(len(factor_list)):
+        for i in range(len(self._factor_list)):
             # 間隔抓出同一個factor
-            temp_factor_df = all_factor_df.iloc[:, lambda df: range(i, all_factor_df.shape[1], len(factor_list))]
+            temp_factor_df = all_factor_df.iloc[:, lambda df: range(
+                i, all_factor_df.shape[1], len(self._factor_list)
+            )]
             temp_factor_df.columns = [x.split('@')[0] for x in temp_factor_df.columns]
-            factor_df_dict[factor_list[i]] = temp_factor_df
+            factor_df_dict[self._factor_list[i]] = temp_factor_df
+
         return factor_df_dict
     
     # 將傳入的df依照某因子排序
@@ -82,8 +87,10 @@ class Factor:
 
         df = df.reset_index()
         df.columns = ['ticker', factor]
+
         # 預設None代表 如果沒有指定要怎麼排列就照因子預設排列
         if ascending == None:
+
             if factor not in special_factor_list:
                 # 不在special_factor 就大到小排列
                 df = df.sort_values(ascending=False, by=factor)
@@ -93,30 +100,31 @@ class Factor:
                 df = df.fillna(-1)
                 df[factor] = df[factor].apply(lambda value: np.nan if value <= 0 else value)
                 df = df.sort_values(ascending=True, by=factor)
+
         else:
             df = df.sort_values(ascending=ascending, by=factor)
+
         df = df.reset_index(drop=True)
+
         if return_list == True:
+
             if df.shape[0] > group_size:
                 count = (df.shape[0] // group_size) + 1
                 df_list = []
+
                 for i in range(count):
                     if i == 0: # 第一個
                         df_list.append(df.iloc[:group_size])
+
                     elif i+1 == count: # 最後一個
                         df_list.append(df.iloc[group_size*i:])
+
                     else:
                         df_list.append(df.iloc[group_size*i: group_size*(i+1)])
             else:
                 df_list = [df]
+
             return df_list
+
         else:
             return df
-
-    def check_nan(self, factor, date):
-        print('[Factor]: check_nan()')
-        df = self.factor_df_dict[factor]
-        df = df.loc[date].reset_index()
-        df.columns = ['ticker', factor]
-        percent_missing = df[factor].isnull().sum() / len(df) * 100
-        return round(percent_missing, 2)

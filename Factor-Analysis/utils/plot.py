@@ -2,11 +2,11 @@ import matplotlib as mpl
 import mplfinance as mpf
 from cycler import cycler
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 class Plot:
 
-    def make_addplot(self, addplot_list):
-        print('[Plot]: make_addplot()')
+    def _make_addplot(self, addplot_list):
         output_list = []
         for elm in addplot_list:
             addplot_data  = mpf.make_addplot(elm)
@@ -70,11 +70,26 @@ class Plot:
         mpl.rcParams['lines.linewidth'] = .5
 
         if addplot_list is not None:
-            addplot_list = self.make_addplot(addplot_list)
+            addplot_list = self._make_addplot(addplot_list)
             mpf.plot(df, **kwargs, style=s, addplot=addplot_list)
         else:
             kwargs['mav'] = (7, 30, 60)
             mpf.plot(df, **kwargs, style=s)
 
+    def plot_line_chart(self, df, x_label, y_label):
+        # 日期需設定為index
+        ax = df.plot(color='green', figsize=(12, 8))
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+
+        # 強調Y軸上某一個點
+        ax.axhline(10000000, color='red', linestyle='--')
+        # 防止科學符號出現
+        ax.ticklabel_format(style='plain', axis='y')
+        plt.show()
+
+    def plot_heatmap(self, df):
+        sns.heatmap(df, cmap='viridis')
+        plt.show()
 
 

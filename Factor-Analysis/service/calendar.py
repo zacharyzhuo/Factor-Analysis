@@ -27,8 +27,10 @@ class Calendar:
         }
         response = requests.get("http://{}/cal/get_all_date".format(self._api_server_IP), params=payloads)
         date_list = json.loads(response.text)['result']
+        
         date_df = pd.DataFrame(date_list, columns=['date'])
         date_df['date'] = pd.to_datetime(date_df['date'], format="%Y-%m-%d")
+
         return date_df
 
     # 往前或往後抓交易日
@@ -67,6 +69,7 @@ class Calendar:
                 closest_season_date = (temp_date-timedelta(days=1)).strftime("%Y-%m-%d")
                 closest_season_df = df.loc[df['date'] <= closest_season_date]
                 closest_season_date = closest_season_df['date'].iloc[-1]
+
             # 往後 或=0
             else:
                 # 往前找最接近的 3 6 9 12
@@ -93,6 +96,7 @@ class Calendar:
             start_date = start_date.strftime('%Y-%m-%d')
         if type(end_date) is not str:
             end_date = end_date.strftime('%Y-%m-%d')
+
         start_year = int(start_date.split('-')[0])
         end_year = int(end_date.split('-')[0])
 
@@ -105,6 +109,7 @@ class Calendar:
                 # 需要在給定的期間內才append
                 if date >= start_date and date <= end_date:
                     date_list.append(date)
+
         return date_list
 
     # 往前或者往後抓幾個財報公布日
@@ -116,11 +121,14 @@ class Calendar:
         # 預設為資料庫歷史資料最大區間
         report_date_list = self.get_report_date_list('2000-01-01', '2020-12-31')
         result_list = []
+
         for report_date in report_date_list:
             if how < 0:
                 if report_date < date:
                     result_list.append(report_date)
+
             else:
                 if report_date >= date:
                     result_list.append(report_date)
+
         return result_list[how]

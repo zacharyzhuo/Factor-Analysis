@@ -15,6 +15,7 @@ class BuyAndHold(Strategy):
         
         if today in self._buy_list:
             self.buy()
+            
         elif today in self._sell_list:
             for trade in self.trades:
                 trade.close()

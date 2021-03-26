@@ -6,6 +6,7 @@ class General:
     def __init__(self):
         pass
 
+    # 排列組合各種參數
     @staticmethod
     def combinate_parameter(factor_list, strategy_list, date_2, date_3):
         data = factor_list, strategy_list, date_2, date_3
@@ -19,6 +20,7 @@ class General:
                 task_list.append([x, y, z, w])
         return task_list
 
+    # 將整串request factor list抓出不重複的因子 回傳一個陣列
     @staticmethod
     def get_distinct_factor_list(org_factor_list):
         factor_list = []
@@ -30,20 +32,9 @@ class General:
                     factor_list.append(factor)
         return factor_list
 
+    # 將以某符號間格的字串(預設'|') 轉成list 方便寫入資料庫
     @staticmethod
     def string_to_list(string, d_type='string', sep='|'):
-        """
-        將list的字串轉換回list型態
-
-        :param string: string (Require)
-            傳入原始list之字串
-        :param d_type: string (Optional)
-            指定list中各元素之型態，可指定為string（預設）、int、float
-        :param sep: string (Optional)
-            分隔之符號，預設為「|」
-        :return: string_list: list
-            回傳字串解析結果
-        """
         if d_type == 'string':
             string_list = [n for n in string.split(sep)]
         elif d_type == 'int':
@@ -53,17 +44,9 @@ class General:
 
         return string_list
 
+    # 將list轉成字串並中間以某符號間格(預設'|') 方便寫入資料庫
     @staticmethod
     def list_to_string(ori_list, sep='|'):
-        """
-        將list轉換成字串（以特殊符號分隔）
-
-        :param ori_list: list (Require)
-            原始之list要轉換成字串
-        :param sep: string (Optional)
-            分隔之符號，預設為「|」
-        :return:
-        """
         string = ""
         if len(ori_list) == 0:
             pass
@@ -74,21 +57,9 @@ class General:
             string = string[1:]
         return string
     
+    # 將雙因子之間以'&'間隔 而各因子之間以'|'間隔的字串轉為list
     @staticmethod
     def factor_string_to_list(string, d_type='string', sep='|'):
-        """
-        將factor list的字串轉換回list(2D)型態
-        （1D: 以"|"分隔 2D: 以"&"分隔）
-
-        :param string: string (Require)
-            傳入原始list之字串
-        :param d_type: string (Optional)
-            指定list中各元素之型態，可指定為string（預設）、int、float
-        :param sep: string (Optional)
-            1D: 以"|"分隔 2D: 以"&"分隔
-        :return: string_list: list
-            回傳字串解析結果
-        """
         if d_type == 'string':
             string_list = [n.split('&') for n in string.split(sep)]
         elif d_type == 'int':
@@ -98,18 +69,9 @@ class General:
 
         return string_list
 
+    # 將request factor list轉成 雙因子之間以'&'間隔 而各因子之間以'|'間隔的字串
     @staticmethod
     def factor_list_to_string(ori_list, sep='|'):
-        """
-        將factor list(2D)轉換成字串
-        （1D: 以"|"分隔 2D: 以"&"分隔）
-
-        :param ori_list: list (Require)
-            原始之list要轉換成字串
-        :param sep: string (Optional)
-            元素之間分隔之符號「|」 因子之間分隔之符號「&」
-        :return:
-        """
         string = ""
         if len(ori_list) == 0:
             pass
@@ -123,6 +85,7 @@ class General:
             string = string[1:]
         return string
 
+    # 將某一個陣列元素中的因子轉成字串 如果是雙因子中間以'&'間隔
     @staticmethod
     def factor_to_string(ori_list):
         if len(ori_list) == 1:
@@ -130,6 +93,7 @@ class General:
         elif len(ori_list) == 2:
             return "{}&{}".format(ori_list[0], ori_list[1])
 
+    # 陣列轉成字典
     @staticmethod
     def list_to_dict(key_column, data):
         result_dict = dict()

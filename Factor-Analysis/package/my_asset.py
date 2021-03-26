@@ -12,18 +12,6 @@ from utils.general import General
 class MyAsset:
 
     def __init__(self, strategy_config, cal, fac):
-        print('--------------------------------------------')
-        print('factor_list: ', strategy_config['factor_list'])
-        print('strategy: ', strategy_config['strategy'])
-        print('n_season: ', strategy_config['n_season'])
-        print('group: ', strategy_config['group'])
-        print('position: ', strategy_config['position'])
-        print('start_equity: ', strategy_config['start_equity'])
-        print('backtesting period: from {} to {}'.format(
-            strategy_config['start_date'], strategy_config['end_date'])
-        )
-        print('--------------------------------------------')
-
         self._strategy_config = strategy_config
         self._cal = cal
         self._fac = fac
@@ -32,9 +20,27 @@ class MyAsset:
         self._path = self._cfg.get_value('path', 'path_to_portfolio_performance')
         self._general = General()
 
+        self._factor_str = self._general.factor_to_string(self._strategy_config['factor_list'])
         self._portfolio = None
+
+        self._show_task_detail()
         self._create_portfolio()
         self._write_portfolio_performance()
+    
+    def _show_task_detail(self):
+        columns_list = [
+            'factor_list', 'strategy', 'n_season', 'group', 
+            'position', 'start_equity', 'period'
+        ]
+
+        df = pd.DataFrame().append({
+            'factor_list': self._factor_str, 'strategy': self._strategy_config['strategy'], 
+            'n_season': self._strategy_config['n_season'], 'group': self._strategy_config['group'], 
+            'position': self._strategy_config['position'], 'start_equity': self._strategy_config['start_equity'], 
+            'period': "from {} to {}".format(self._strategy_config['start_date'], self._strategy_config['end_date'])
+        }, ignore_index=True)[columns_list]
+
+        print(df.set_index('factor_list').T)
     
     def _create_portfolio(self):
         print('[MyAsset]: creating protfolio...')
@@ -56,12 +62,12 @@ class MyAsset:
     
     def _write_portfolio_performance(self):
         performance_df, equity_df = self._portfolio.get_performance_data()
-        factor_str = self._general.factor_to_string(self._strategy_config['factor_list'])
-        path = self._path + factor_str
+        performance_df = performance_df[['ticker', 'start', 'end', 'start_equity', 'final_equity', 'return']]
+        path = self._path + self._factor_str
 
         # e.g. MOM_0_0_1_5 or MOM&GVI_1_0_1_5
         file_name = "{}_{}_{}_{}_{}".format(
-            factor_str,
+            self._factor_str,
             str(self._strategy_config['strategy']),
             str(self._strategy_config['n_season']), 
             str(self._strategy_config['group']), 

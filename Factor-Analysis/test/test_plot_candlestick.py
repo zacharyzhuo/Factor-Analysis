@@ -6,16 +6,19 @@ import json
 import talib
 import sys
 sys.path.append("../")
-from tools.plot import Plot
+from utils.plot import Plot
+from service.calendar import Calendar
 
 
 server_ip = "http://140.115.87.197:8090/"
+cal = Calendar('TW')
 
-ticker_list = ['3550', '3441']
 payloads = {
-    'ticker_list': [ticker_list[0]],
+    'ticker_list': ['1524'],
+    'start_date': cal.get_trade_date('2010-01-01', (1+30)*-1, 'd'),
+    'end_date': cal.get_trade_date('2010-03-31', 1, 'd'),
 }
-response = requests.get(server_ip+"stk/get_ticker_all_stk", params=payloads)
+response = requests.get(server_ip+"stk/get_ticker_period_stk", params=payloads)
 stk_dict = json.loads(response.text)['result']
 
 stk_df = pd.DataFrame(stk_dict[ticker_list[0]])
@@ -23,9 +26,14 @@ stk_df['date'] = [datetime.datetime.strptime(elm, "%Y-%m-%d") for elm in stk_df[
 stk_df.set_index("date", inplace=True)
 stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume', 'outstanding_share']
 stk_df = stk_df.drop('outstanding_share', axis=1)
-# stk_df = stk_df.interpolate(method='linear', limit_direction='forward', axis=0)
 stk_df = stk_df.dropna()
 print(stk_df)
 
+up_band, mid, down_band = BBANDS(
+    stk_df['Close'], timeperiod=30,
+    nbdevup=1.5, nbdevdn=1.5,
+    matype=0
+)
+
 plot = Plot()
-plot.plot_candlestick(df=stk_df)
+plot.plot_candlestick(df=stk_df, addplot_list=[up_band, mid, down_band])

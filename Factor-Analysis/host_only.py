@@ -1,10 +1,13 @@
 import time
+import pathlib
 from multiprocessing import Process, freeze_support
 from utils.config import Config
 from utils.general import General
 from service.calendar import Calendar
 from service.factor import Factor
 from package.my_asset import MyAsset
+import requests
+import json
 
 
 # factor_list = [
@@ -42,10 +45,23 @@ if __name__ == "__main__":
         for p in request['position_list']:
             stra_start = time.time()
 
+            strategy = 2
+            n_season = 0
+
+            factor_str = general.factor_to_string(factor_list[0])
+            path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
+            file_name = "{}_{}_{}_{}_{}".format(factor_str, strategy, n_season, g, p)
+            file = pathlib.Path("{}/{}.csv".format(path, file_name))
+
+            # if file.exists():
+            #     print('file exist!')
+            #     break
+
+            # else:
             strategy_config = {
                 'factor_list': factor_list[0],
-                'strategy': 2,
-                'n_season': 0,
+                'strategy': strategy,
+                'n_season': n_season,
                 'group': g,
                 'position': p,
                 'start_equity': int(cfg.get_value('parameter', 'start_equity')),
@@ -65,20 +81,31 @@ if __name__ == "__main__":
     #         request['group_list'],
     #         request['position_list']
     #     ):
-    #         start = time.time()
-    #         strategy_config = {
-    #             'factor_list': task[0],
-    #             'strategy': task[1],
-    #             'n_season': request['n_season'],
-    #             'group': task[2],
-    #             'position': task[3],
-    #             'start_equity': int(cfg.get_value('parameter', 'start_equity')),
-    #             'start_date': cfg.get_value('parameter', 'start_date'),
-    #             'end_date': cfg.get_value('parameter', 'end_date'),
-    #         }
-    #         my_stra = MyAsset(strategy_config, cal, fac)
-    #         end = time.time()
-    #         print("Execution time: %f second" % (end - start))
+
+    #         factor_str = general.factor_to_string(task[0])
+    #         path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
+    #         file_name = "{}_{}_{}_{}_{}".format(factor_str, task[1], request['n_season'], task[2], task[3])
+    #         file = pathlib.Path("{}/{}.csv".format(path, file_name))
+
+    #         if file.exists():
+    #             print('file exist!')
+    #             break
+
+    #         else:
+    #             start = time.time()
+    #             strategy_config = {
+    #                 'factor_list': task[0],
+    #                 'strategy': task[1],
+    #                 'n_season': request['n_season'],
+    #                 'group': task[2],
+    #                 'position': task[3],
+    #                 'start_equity': int(cfg.get_value('parameter', 'start_equity')),
+    #                 'start_date': cfg.get_value('parameter', 'start_date'),
+    #                 'end_date': cfg.get_value('parameter', 'end_date'),
+    #             }
+    #             my_stra = MyAsset(strategy_config, cal, fac)
+    #             end = time.time()
+    #             print("Execution time: %f second" % (end - start))
     # except Exception as e:
     #     print(e)
        
