@@ -1,6 +1,9 @@
 import time
+import requests
+import json
 from utils.dbmgr import DBMgr
 from utils.general import General
+from utils.config import Config
 from task.factor_analysis_handler import FactorAnalysisHandler
 from node.node_handler import NodeHandler
 from msg.host_msg_handler import HostMsgHandler
@@ -18,6 +21,8 @@ class FactorAnalysisTaskHandler:
         self._node_handler = NodeHandler()
         self._dbmgr = DBMgr()
         self._general = General()
+        self._cfg = Config()
+        self._api_server_IP = self._cfg.get_value('IP', 'api_server_IP')
 
     # 自動分配排程工作
     def schedule_task(self):
@@ -38,13 +43,17 @@ class FactorAnalysisTaskHandler:
             print("[FactorAnalysisTaskHandler] 資料庫內已經有完成之任務 編號：{}".format(self._task_id))
         # 需要創建不同組合工作
         else:
-            # 將各種 request 之參數排列組合成一個2D陣列
-            combination = self._general.combinate_parameter(
-                self._request['factor_list'],
-                self._request['strategy_list'],
-                self._request['group_list'],
-                self._request['position_list']
-            )
+            payloads = {
+                'factor_list': self._request['factor_list'],
+                'strategy_list': self._request['strategy_list'],
+                'window_list': self._request['window_list'],
+                'method_list': self._request['method_list'],
+                'group_list': self._request['group_list'],
+                'position_list': self._request['position_list'],
+            }
+            response = requests.get("http://{}/task/get_task_combi".format(self._api_server_IP), params=payloads)
+            combination = json.loads(response.text)['result']
+
             # 將 request 轉換成任務新增至 DB ，並取得 task_id
             self._task_id = self._factor_analysis_handler.add_task_to_db(self._request)
             # 將所有任務的組合新增至 DB

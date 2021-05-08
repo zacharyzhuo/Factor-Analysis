@@ -1,24 +1,7 @@
-from itertools import product
-
-
 class General:
 
     def __init__(self):
         pass
-
-    # 排列組合各種參數
-    @staticmethod
-    def combinate_parameter(factor_list, strategy_list, date_2, date_3):
-        data = factor_list, strategy_list, date_2, date_3
-        task_list = []
-        for x, y, z, w in product(*data):
-            # 單因子不能執行策略 1
-            if len(x) == 1 and y != 1:
-                task_list.append([x, y, z, w])
-            # 雙因子不能執行策略 0
-            if len(x) == 2 and y != 0:
-                task_list.append([x, y, z, w])
-        return task_list
 
     # 將整串request factor list抓出不重複的因子 回傳一個陣列
     @staticmethod

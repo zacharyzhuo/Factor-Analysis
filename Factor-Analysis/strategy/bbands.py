@@ -4,18 +4,19 @@ from talib import BBANDS
 
 class BBands(Strategy):
 
-    def set_param(self, ma_len, band_width):
-        self._ma_len = ma_len
-        self._band_width = band_width
+    def set_param(self, ma_len, band_width, start_date):
+        self.ma_len = ma_len
+        self.band_width = band_width
+        self.start_date = start_date
 
     def init(self):
         super().init()
         
         up_band, mid, down_band = BBANDS(
             self.data.Close,
-            timeperiod=self._ma_len,
-            nbdevup=self._band_width,
-            nbdevdn=self._band_width,
+            timeperiod=self.ma_len,
+            nbdevup=self.band_width,
+            nbdevdn=self.band_width,
             matype=0
         )
 
@@ -25,11 +26,13 @@ class BBands(Strategy):
         
     def next(self):
         super().next()
+        today = self.data.index[-1].strftime('%Y-%m-%d')
         
         # 收盤價大於通道上軌: 買
         if self.data.Close > self.up_band:
             if not self.position:
-                self.buy()
+                if today >= self.start_date:
+                    self.buy()
 
         # 收盤價小於通道上軌: 賣
         if self.data.Close < self.down_band:

@@ -7,7 +7,7 @@ class CalendarWriter:
 
     def __init__(self):
         self._cfg = Config()
-        self._path = self._cfg.get_value('path', 'path_to_share_folder')
+        self._path = self._cfg.get_value('path', 'path_to_share_folder') + 'calendar/'
 
         self._dbmgr = DBMgr(db='calendar')
 
@@ -15,7 +15,7 @@ class CalendarWriter:
         self._write_data_to_db(df)
 
     def _read_file(self):
-        df = pd.read_excel(self._path+'calendar/tw_calendar.xlsx')
+        df = pd.read_excel(self._path+'tw_calendar.xlsx')
         df = df[['年月日']].sort_values(by='年月日').reset_index(drop=True)
         df.columns = ['date']
         return df

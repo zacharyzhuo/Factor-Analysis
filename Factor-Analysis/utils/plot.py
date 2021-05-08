@@ -78,7 +78,7 @@ class Plot:
 
     def plot_line_chart(self, df, x_label, y_label):
         # 日期需設定為index
-        ax = df.plot(color='green', figsize=(12, 8))
+        ax = df.plot.line(figsize=(12, 8))
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
 

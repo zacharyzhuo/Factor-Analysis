@@ -10,19 +10,56 @@ if __name__ == "__main__":
     # freeze_support()
 
     factor_list = [
-        ['FCF_P', 'EPS'], ['MOM_52w_PR', 'P_B'], ['EV_S', 'MOM_7m'], ['FCF_P', 'MOM_7m'],
-        ['MOM_52w_PR', 'FCF_P'], ['EV_EBITDA', 'FCF_OI'], ['FCF_P', 'CROIC'], ['FCFPS', 'EV_EBITDA'],
-        ['ROIC', 'P_S'], ['ROE', 'P_B'], ['P_B', 'OCF_E'], ['CROIC', 'P_IC'],
-        ['P_B', 'EP'], ['FCF_OI', 'P_S'], ['P_B', 'EPS'],
+        ['FCF_P', 'CROIC'], ['EV_EBITDA', 'ROIC'], ['P_B', 'EP'], ['ROE', 'P_B'],
+        ['ROIC', 'P_S'], ['CROIC', 'P_IC'], ['FCFPS', 'EV_EBITDA'], ['FCF_P', 'EPS'],
+        ['P_B', 'EPS'], ['FCF_P', 'MOM_7m'], ['EV_S', 'MOM_7m'], ['MOM_52w_PR', 'FCF_P'],
+        ['MOM_52w_PR', 'P_B'], ['EV_EBITDA', 'FCF_OI'], ['FCF_OI', 'P_S'], ['P_B', 'OCF_E']
     ]
+
     factor_list = [
-        ['CROIC']
-        # ['GVI'], ['EPS'], ['P_B'], ['FCF_P']
-        # ['MOM_7m'], ['MOM_52w_PR'], ['PE'], ['EV_EBITDA'],
-        # ['EV_S'], ['CROIC'], ['FCF_OI'], ['FCF_LTD'],
-        # ['ROE'], ['ROIC'], ['EP'], ['P_S'],
-        # ['P_IC'], ['OCF_E'], ['FCFPS']
+        ['EV_EBITDA', 'ROIC'], ['P_B', 'EPS'], ['FCF_P', 'MOM_7m'],
+        ['FCF_OI', 'P_S'], ['FCF_P'], ['EV_EBITDA'],
+        ['P_B'], ['P_S'], ['MOM_7m'],
+        ['EPS'], ['ROIC'], ['FCF_OI']
     ]
+
+    factor_list = [
+        # ['EV_EBITDA', 'ROIC'],
+        ['P_B', 'EPS'],
+        # ['FCF_P', 'MOM_7m'],
+        # ['FCF_OI', 'P_S'],
+        # ['FCF_P'], 
+        # ['EV_EBITDA'],
+        # ['P_B'], 
+        # ['P_S'], 
+        # ['MOM_7m'],
+        # ['EPS'], 
+        # ['ROIC'], 
+        # ['FCF_OI']
+    ]
+
+    request = {
+        'factor_list': factor_list,
+        'strategy_list': [0],
+        'window_list': [0],
+        'method_list': [0],
+        'group_list': [1, 2, 3, 4, 5], 
+        # 'position_list':[6, 15, 60, 150, 300],
+        'position_list':[15],
+    }
+    Analysis().plot_equity_curve(request)
+
+    request = {
+        'factor_list': factor_list,
+        'strategy_list': [1],
+        'window_list': [2],
+        'method_list': [0, 1],
+        'group_list': [1], 
+        'position_list':[5],
+    }
+    # Analysis().check_cap_util_rate(request)
+
+    # ======================================================
 
     # for factor in factor_list:
     #     request = {
@@ -41,11 +78,4 @@ if __name__ == "__main__":
     #     'target_list': ['Net Profit (%)', 'CAGR (%)', 'MDD (%)'],
     # }
     # RegressionAnalysis(request)
-
-    request = {
-        'factor_list': ['GVI'], 
-        'strategy_list': [2],
-        'group_list': [1], 
-        'position_list':[5],
-    }
-    Analysis().analysis(request)
+    

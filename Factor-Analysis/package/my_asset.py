@@ -1,8 +1,5 @@
 import os
 import pandas as pd
-import numpy as np
-import datetime
-import requests
 import json
 from package.portfolio import Portfolio
 from utils.config import Config
@@ -20,57 +17,45 @@ class MyAsset:
         self._path = self._cfg.get_value('path', 'path_to_portfolio_performance')
         self._general = General()
 
-        self._factor_str = self._general.factor_to_string(self._strategy_config['factor_list'])
-        self._portfolio = None
+        self._factor_str = self._general.factor_to_string(self._strategy_config['factor'])
 
         self._show_task_detail()
-        self._create_portfolio()
+        self._portfolio = Portfolio(self._strategy_config, self._cal, self._fac)
         self._write_portfolio_performance()
     
     def _show_task_detail(self):
         columns_list = [
-            'factor_list', 'strategy', 'n_season', 'group', 
-            'position', 'start_equity', 'period'
+            'factor', 'strategy', 'window', 'method', 'group', 
+            'position', 'n_season', 'start_equity', 'period'
         ]
 
         df = pd.DataFrame().append({
-            'factor_list': self._factor_str, 'strategy': self._strategy_config['strategy'], 
-            'n_season': self._strategy_config['n_season'], 'group': self._strategy_config['group'], 
-            'position': self._strategy_config['position'], 'start_equity': self._strategy_config['start_equity'], 
-            'period': "from {} to {}".format(self._strategy_config['start_date'], self._strategy_config['end_date'])
+            'factor': self._factor_str,
+            'strategy': self._strategy_config['strategy'],
+            'window': self._strategy_config['window'], 
+            'method': self._strategy_config['method'], 
+            'group': self._strategy_config['group'],
+            'position': self._strategy_config['position'],
+            'n_season': int(self._cfg.get_value('parameter', 'n_season')),
+            'start_equity': int(self._cfg.get_value('parameter', 'start_equity')),
+            'period': "from {} to {}".format(
+                self._cfg.get_value('parameter', 'start_date'),
+                self._cfg.get_value('parameter', 'end_date')
+            )
         }, ignore_index=True)[columns_list]
-
-        print(df.set_index('factor_list').T)
-    
-    def _create_portfolio(self):
-        print('[MyAsset]: creating protfolio...')
-
-        if self._strategy_config['strategy'] == 0 and \
-            len(self._strategy_config['factor_list']) != 1:
-            raise Exception("[ERROR] 單因子策略只能傳入一個因子")
-
-        elif self._strategy_config['strategy'] == 1 and \
-            len(self._strategy_config['factor_list']) != 2:
-            raise Exception("[ERROR] 雙因子策略只能傳入兩個因子")
-
-        elif self._strategy_config['strategy'] == 2:
-            if len(self._strategy_config['factor_list']) < 1 or \
-                len(self._strategy_config['factor_list']) > 2:
-                raise Exception("[ERROR] 布林通道策略只能傳入一個或兩個因子")
-
-        self._portfolio = Portfolio(self._strategy_config, self._cal, self._fac)
+        print(df.set_index('factor').T)
     
     def _write_portfolio_performance(self):
-        performance_df, equity_df = self._portfolio.get_performance_data()
-        performance_df = performance_df[['ticker', 'start', 'end', 'start_equity', 'final_equity', 'return']]
+        portfolio_performance, portfolio_equity = self._portfolio.get_performance_data()
         path = self._path + self._factor_str
 
         # e.g. MOM_0_0_1_5 or MOM&GVI_1_0_1_5
-        file_name = "{}_{}_{}_{}_{}".format(
+        file_name = "{}_{}_{}_{}_{}_{}".format(
             self._factor_str,
             str(self._strategy_config['strategy']),
-            str(self._strategy_config['n_season']), 
-            str(self._strategy_config['group']), 
+            str(self._strategy_config['window']),
+            str(self._strategy_config['method']),
+            str(self._strategy_config['group']),
             str(self._strategy_config['position'])
         )
 
@@ -79,9 +64,9 @@ class MyAsset:
             os.makedirs(path)
 
         path = "{}/{}".format(path, file_name)
-        performance_df.to_csv(path + '.csv', header=True)
+        portfolio_performance.to_csv(path + '.csv', header=True)
 
-        equity_df['date'] = equity_df['date'].dt.strftime('%Y-%m-%d')
+        portfolio_equity['date'] = portfolio_equity['date'].dt.strftime('%Y-%m-%d')
         with open(path + '.json', 'w') as file:
-            json.dump(equity_df.to_dict(), file)
+            json.dump(portfolio_equity.to_dict(), file)
         print('[MyAsset]: completed writing porfolio performance files')

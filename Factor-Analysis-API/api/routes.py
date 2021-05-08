@@ -1,4 +1,4 @@
-from api import calendar, stock, stock_index, indicator, factor
+from api import calendar, stock, stock_index, indicator, factor, task
 
 def create_routes(api):
     # calendar api
@@ -27,3 +27,5 @@ def create_routes(api):
     api.add_resource(factor.FacByTickerApi, '/fac/get_ticker_all_fac')
     api.add_resource(factor.FacByTickerFeildApi, '/fac/get_ticker_fac')
     api.add_resource(factor.FacByDateFeildApi, '/fac/get_date_fac')
+
+    api.add_resource(task.TaskApi, '/task/get_task_combi')

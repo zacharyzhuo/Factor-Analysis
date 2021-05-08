@@ -1,11 +1,5 @@
 import pandas as pd
-import numpy as np
 import datetime
-import requests
-import json
-import pathos
-from multiprocessing import Pool
-from backtesting import Backtest, Strategy
 from utils.config import Config
 from package.window import Window
 from utils.plot import Plot
@@ -22,23 +16,25 @@ class Portfolio:
 
         self._window_config = {
             'strategy': strategy_config['strategy'],
-            'factor_list': strategy_config['factor_list'],
-            'n_season': strategy_config['n_season'],
+            'factor': strategy_config['factor'],
+            'window': strategy_config['window'],
+            'method': strategy_config['method'],
             'group': strategy_config['group'],
             'position': strategy_config['position'],
-            'start_date': strategy_config['start_date'],
-            'end_date': strategy_config['end_date'],
-            'cash': strategy_config['start_equity'],
+            'start_equity': int(self._cfg.get_value('parameter', 'start_equity')),
+            'start_date': self._cfg.get_value('parameter', 'start_date'),
+            'end_date': self._cfg.get_value('parameter', 'end_date'),
+            'n_season': int(self._cfg.get_value('parameter', 'n_season')),
+            'cash': int(self._cfg.get_value('parameter', 'start_equity')),
             'if_first': True,
-            'performance_df': pd.DataFrame(),
-            'equity_df': pd.DataFrame(),
-            'heatmap': pd.DataFrame(),
+            'factor_data': None,
+            'portfolio_performance': pd.DataFrame(),
+            'portfolio_equity': pd.DataFrame(),
         }
         self._report_date_list = cal.get_report_date_list(
             self._window_config['start_date'], self._window_config['end_date']
         )
         self._slide_window()
-        # self._plot_parameter_heatmap()
 
     def _slide_window(self):
         print('[Portfolio]: running sliding window...')
@@ -81,7 +77,4 @@ class Portfolio:
         return window_period_list
     
     def get_performance_data(self):
-        return self._window_config['performance_df'], self._window_config['equity_df']
-
-    def _plot_parameter_heatmap(self):
-        Plot().plot_heatmap(self._window_config['heatmap'][::-1])
+        return self._window_config['portfolio_performance'], self._window_config['portfolio_equity']

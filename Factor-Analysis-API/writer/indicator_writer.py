@@ -8,20 +8,25 @@ from utils.config import Config
 
 
 IND_LIST = [
-    '常續性稅後淨利', '股東權益總額', '每股淨值(B)', '每股盈餘',
-    '季底普通股市值', '淨負債', '稅前息前折舊前淨利', '營業收入淨額',
-    '自由現金流量(D)', '負債及股東權益總額', '特別股負債－非流動', '應付公司債－非流動',  
-    '銀行借款－非流動', '其他長期借款－非流動', '營業成本', '期末普通股－現金股利',
-    '期末特別股－現金股利', '來自營運之現金流量', 'FV變動入損益非流動金融負債－指定公平價值－公司債', '收盤價(元)',
-    '流通在外股數(千股)', '本益比-TSE', 'MOM(7個月相對強弱)', 'MOM(52週價格範圍)'
+    # '常續性稅後淨利', '股東權益總額', '每股淨值(B)', '每股盈餘',
+    # '季底普通股市值', '淨負債', '稅前息前折舊前淨利', '營業收入淨額',
+    # '自由現金流量(D)', '負債及股東權益總額', '特別股負債－非流動', '應付公司債－非流動',  
+    # '銀行借款－非流動', '其他長期借款－非流動', '營業成本', '期末普通股－現金股利',
+    # '期末特別股－現金股利', '來自營運之現金流量', 'FV變動入損益非流動金融負債－指定公平價值－公司債', '收盤價(元)',
+    # '流通在外股數(千股)', '本益比-TSE', 'MOM(7個月相對強弱)', 'MOM(52週價格範圍)'
+
+    '每股盈餘', '季底普通股市值', '淨負債', '稅前息前折舊前淨利',
+    '營業收入淨額', '自由現金流量(D)', '負債及股東權益總額', '常續性稅後淨利', 
+    '股東權益總額', '每股淨值(B)', '來自營運之現金流量', '收盤價(元)', 
+    '本益比-TSE', 'MOM(季)'
 ]
+
 
 class IndicatorWriter:
 
     def __init__(self):
         self._cfg = Config()
-        self._path = self._cfg.get_value('path', 'path_to_share_folder')
-        self._path = self._path + 'indicator/'
+        self._path = self._cfg.get_value('path', 'path_to_share_folder') + 'indicator/'
 
         self._mydb = ConnMysql()
 
@@ -84,8 +89,9 @@ class IndicatorWriter:
             ticker_data_dict[ticker] = ticker_df
         return ticker_data_dict
 
-    def _write_data_to_db(self, ticker_data_dict):
+    def _write_data_to_db(self, ticker_dict):
         conn = self._mydb.connect_db('indicator')
-        for key, value in ticker_data_dict.items():
+
+        for key, value in ticker_dict.items():
             value.to_sql(key, con=conn)
             print('successfully write '+key+' to db')

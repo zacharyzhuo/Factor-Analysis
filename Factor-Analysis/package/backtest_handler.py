@@ -9,58 +9,79 @@ from backtesting import Backtest, Strategy
 from utils.config import Config
 from strategy.buy_and_hold import BuyAndHold
 from strategy.bbands import BBands
+from model.fixed_target import FixedTarget
+from model.dynamic_target import DynamicTarget
 
 
 class BacktestHandler:
 
-    def __init__(self, window_config, t2_period, group_ticker, cal):
+    def __init__(self, window_config, cal, fac):
         self.window_config = window_config
-        self._t2_period = t2_period
-        # 該群排序完的標的
-        self._group_ticker = group_ticker
         self._cal = cal
+        self._fac = fac
 
+        self._period = []
+        self.group_ticker = [] # 該群排序完的標的
         self._cfg = Config()
-        self._ma_len = 30
-        self._band_width = 1.5
+        
+        self._optimized_param = {}
+        self._profit_table = pd.DataFrame()
+        self._weight_table = pd.DataFrame()
+    
+    def t1_optimize(self, t1_period, group_ticker):
+        self._period = t1_period
+        self.group_ticker = group_ticker
 
-        # 選中的標的 B&H: 前幾支標的; BB: 因子排序順序高且先突破的標的
-        self.chosen_ticker = []
-        self.equity_table = pd.DataFrame()
+        if self.window_config['strategy'] != 0:
+            # 最佳化每支候選股 並存下最佳化參數
+            stk_price_dict = self._get_stk_price(self._period)
+            results = self._run_backtest(stk_price_dict, if_optimize=True)
 
-        trade_dict = self._create_equity_table()
-        cash_flow_detail = self._allocate_cash_flow(trade_dict)
-        self._allocate_weight(cash_flow_detail)
+            # 製作最佳化參數字典
+            for result in results:
+                ticker = list(result.keys())[0]
+                ma_len = result[ticker]['strategy']['ma_len']
+                band_width = result[ticker]['strategy']['band_width']
+                self._optimized_param[ticker] = {
+                    'ma_len': ma_len,
+                    'band_width': band_width,
+                }
+            # print(self._optimized_param)
+    
+    def t2_backtest(self, t2_period):
+        self._period = t2_period
+        max_ma = int(self._cfg.get_value('parameter', 'max_ma'))
 
-        # print(self.equity_table)
-        # print(cash_flow_detail)
-
-
-    def _get_stk_price(self):
-        api_server_IP = self._cfg.get_value('IP', 'api_server_IP')
-
-        # 單因子 & 雙因子策略
-        if self.window_config['strategy'] == 0 or self.window_config['strategy'] == 1:
+        # 買入持有策略
+        if self.window_config['strategy'] == 0:
             # 因為 backtesting 不能在第一天跟最後一天交易 所以必須往前後多加一天
-            start_date = self._cal.get_trade_date(self._t2_period[0], -2, 'd')
+            start_date = self._cal.get_trade_date(self._period[0], -2, 'd')
 
         # 布林通道策略
-        elif self.window_config['strategy'] == 2:
+        elif self.window_config['strategy'] == 1:
             # 因為要算均線所以要往前多抓幾天
-            start_date = self._cal.get_trade_date(self._t2_period[0], (1+self._ma_len)*-1, 'd')
+            start_date = self._cal.get_trade_date(self._period[0], (1+max_ma)*-1, 'd')
+        # 必須要往後多抓一天 不然第一天跟最後一天不能交易
+        end_date = self._cal.get_trade_date(self._period[1], 1, 'd')
 
+        stk_price_dict = self._get_stk_price([start_date, end_date])
+        results = self._run_backtest(stk_price_dict)
+        trade_dict = self._create_profit_table(stk_price_dict, results)
+        cash_flow, reallocated_date = self._create_weight_table(trade_dict)
+        self._create_performance_table(cash_flow, reallocated_date)
+
+    def _get_stk_price(self, period):
+        api_server_IP = self._cfg.get_value('IP', 'api_server_IP')
         payloads = {
-            'ticker_list': self._group_ticker,
-            'start_date': start_date,
-            # 其實end date也要多抓一天 才能指定那天出場 但是backtest也會在回測結束時強制全部出場
-            'end_date': self._cal.get_trade_date(self._t2_period[1], 1, 'd'),
+            'ticker_list': self.group_ticker,
+            'start_date': period[0],
+            'end_date': period[1],
         }
         response = requests.get("http://{}/stk/get_ticker_period_stk".format(api_server_IP), params=payloads)
         stk_price_dict = json.loads(response.text)['result']
 
-        for ticker in self._group_ticker:
+        for ticker in self.group_ticker:
             try:
-
                 stk_df = pd.DataFrame(stk_price_dict[ticker]).drop(['index', 'outstanding_share'], axis=1)
                 stk_df['date'] = [datetime.datetime.strptime(elm, "%Y-%m-%d") for elm in stk_df['date']]
                 stk_df.set_index("date", inplace=True)
@@ -68,99 +89,131 @@ class BacktestHandler:
                 stk_df.columns = ['Close', 'High', 'Low', 'Open', 'Volume']
                 stk_df = stk_df.dropna()
                 stk_price_dict[ticker] = stk_df
-
             except Exception as e:
                 pass
 
         return stk_price_dict
 
-    def _run_backtest(self, stk_price_dict):
-        commission = float(self._cfg.get_value('parameter', 'commission'))
-        strat_date = datetime.datetime.strptime(self._t2_period[0], "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(self._t2_period[1], "%Y-%m-%d")
+    def _run_backtest(self, stk_price_dict, if_optimize=False):
+        min_ma = int(self._cfg.get_value('parameter', 'min_ma'))
+        max_ma = int(self._cfg.get_value('parameter', 'max_ma'))
+        ma_step = int(self._cfg.get_value('parameter', 'ma_step'))
+        min_band_width = float(self._cfg.get_value('parameter', 'min_band_width'))
+        max_band_width = float(self._cfg.get_value('parameter', 'max_band_width'))
+        band_width_step = float(self._cfg.get_value('parameter', 'band_width_step'))
 
         # 使用 inner function 特別獨立出需要多核運算的部分
         def multiprocessing_job(ticker):
             try:
-                # 單因子 & 雙因子策略
-                if self.window_config['strategy'] == 0 or self.window_config['strategy'] == 1:
+                # 買入持有策略
+                if self.window_config['strategy'] == 0:
                     # 傳入窗格開始與結束時間 即買點與賣點
-                    BuyAndHold.set_param(BuyAndHold, [self._t2_period[0]],  [self._t2_period[1]])
+                    BuyAndHold.set_param(BuyAndHold, [self._period[0]],  [self._period[1]])
                     bt = Backtest(
                         stk_price_dict[ticker],
                         BuyAndHold,
-                        commission=commission,
                         exclusive_orders=True,
                         trade_on_close=True # 可以在訊號觸發當天收盤價買
                     )
+                    result = bt.run()
+
+                    return {ticker: {
+                        'trade_df': result['_trades'],
+                    }}
 
                 # 布林通道策略
-                elif self.window_config['strategy'] == 2:
-                    # 傳入均線長度與寬度
-                    BBands.set_param(BBands, self._ma_len,  self._band_width)
-                    bt = Backtest(
-                        stk_price_dict[ticker],
-                        BBands,
-                        commission=commission,
-                        exclusive_orders=True,
-                        trade_on_close=True # 可以在訊號觸發當天收盤價買
-                    )
+                elif self.window_config['strategy'] == 1:
+                    # 是否為最佳化找參數
+                    if if_optimize:
+                        BBands.set_param(BBands, min_ma, min_band_width, self._period[0])
+                        bt = Backtest(
+                            stk_price_dict[ticker],
+                            BBands,
+                            exclusive_orders=True,
+                            trade_on_close=True # 可以在訊號觸發當天收盤價買
+                        )
+                        result = bt.optimize(
+                            ma_len=range(min_ma, max_ma+ma_step, ma_step),
+                            band_width=[round(x, 1) for x in np.arange(
+                                min_band_width, max_band_width+band_width_step, band_width_step
+                            )],
+                        )
+                    
+                    else:
+                        if self.window_config['window'] == 0:
+                            ma_len = int(self._cfg.get_value('parameter', 'ma_len'))
+                            band_width = float(self._cfg.get_value('parameter', 'band_width'))
 
-                result = bt.run()
-                # print(result)
-                # bt.plot()
+                        elif self.window_config['window'] == 1 or self.window_config['window'] == 2:
+                            ma_len = self._optimized_param[ticker]['ma_len']
+                            band_width = self._optimized_param[ticker]['band_width']
+
+                        # period參數: 有多往前算均線 但必須在窗格開始第一天之後才能買
+                        BBands.set_param(BBands, ma_len, band_width, self._period[0])
+                        bt = Backtest(
+                            stk_price_dict[ticker],
+                            BBands,
+                            exclusive_orders=True,
+                            trade_on_close=True # 可以在訊號觸發當天收盤價買
+                        )
+                        result = bt.run()
                 
-                return {ticker: {
-                    'equity_df': result['_equity_curve'].loc[strat_date: end_date][['Equity']],
-                    'trade_df': result['_trades'],
-                }}
+                    return {ticker: {
+                        'strategy': {
+                            'ma_len': result['_strategy'].ma_len,
+                            'band_width': result['_strategy'].band_width,
+                        },
+                        'trade_df': result['_trades'],
+                    }}
             except Exception as e:
                 print("[ticker {}]: <{} to {}> {}".format(
-                    ticker, self._t2_period[0], self._t2_period[1], e)
+                    ticker, self._period[0], self._period[1], e)
                 )
                 return {ticker: {
-                    'equity_df': pd.DataFrame(),
+                    'strategy': {
+                        'ma_len': None,
+                        'band_width': None,
+                    },
                     'trade_df': pd.DataFrame(),
                 }}
         
         # 因為有使用 inner function 所以要使用 pathos 的 multiprocessing 而非 python 原生的
         # Pool() 不放參數則默認使用電腦核的數量
         pool = pathos.multiprocessing.Pool()
-        results = pool.map(multiprocessing_job, self._group_ticker) 
+        results = pool.map(multiprocessing_job, self.group_ticker) 
         pool.close()
         pool.join()
 
         return results
 
-    def _create_equity_table(self):
-        stk_price_dict = self._get_stk_price()
-        results = self._run_backtest(stk_price_dict)
-        
+    def _create_profit_table(self, stk_price_dict, results):
         fail_ticker_list = []
         trade_dict = {}
 
         # 整理預先回測好的 每日權益變化 與 每筆交易
         for result in results:
             ticker = list(result.keys())[0]
-            equity_df = list(result.values())[0]['equity_df']
-            trade_df = list(result.values())[0]['trade_df']
+            trade_df = result[ticker]['trade_df']
 
-            # 紀錄回測失敗標的
-            if equity_df.empty and trade_df.empty:
-                fail_ticker_list.append({
-                    'ticker': ticker,
-                    'equity_df': equity_df,
-                    'trade_df': trade_df, 
-                })
+            # 回測失敗的標的不納入排名
+            if trade_df.empty:
+                self.group_ticker.remove(ticker)
 
             # 其他執行合併每日權益變化 以及取交易開始與結束時間
             else:
-                equity_df.columns = [ticker]
+                # 用收盤價來算賺賠 並調整範圍
+                stk_df = stk_price_dict[ticker][['Close']].loc[
+                    self._period[0]: self._period[1]
+                ]
+                stk_df['shift'] = stk_df['Close'].shift()
+                # [(今日收盤 - 昨日收盤)/ 昨日收盤] + 1
+                stk_df = ((stk_df['Close']-stk_df['shift'])/stk_df['shift'] + 1).to_frame()
+                stk_df.columns = [ticker]
 
-                if self.equity_table.empty:
-                    self.equity_table = equity_df
+                if self._profit_table.empty:
+                    self._profit_table = stk_df
                 else:
-                    self.equity_table = self.equity_table.join(equity_df)
+                    self._profit_table = self._profit_table.join(stk_df)
 
                 # 同個窗格內同個標的可能會進出很多次
                 trade_list = []
@@ -168,151 +221,223 @@ class BacktestHandler:
                     trade_list.append([row['EntryTime'], row['ExitTime']])
                 
                 trade_dict[ticker] = trade_list
-        
-        # 將所有回測失敗標的補空值
-        if len(fail_ticker_list) != 0:
-            # 取第一個column做為參考 把值都轉成空值
-            df = self.equity_table[[self.equity_table.columns[0]]].copy()
-            df.loc[:, self.equity_table.columns[0]] = np.nan
-
-            # 然後補在 equity_table 後面
-            for result in fail_ticker_list:
-                self.equity_table = self.equity_table.join(
-                    df.rename(columns={self.equity_table.columns[0]: result['ticker']})
-                )
-
-                trade_dict[result['ticker']] = []
 
         # 依照因子排序的順序來調整column
-        self.equity_table = self.equity_table[self._group_ticker]
+        self._profit_table = self._profit_table[self.group_ticker]
 
         return trade_dict
 
-    def _allocate_cash_flow(self, trade_dict):
-        # 二維陣列 紀錄每個金流去向
-        cash_flow_detail = []
+    def _create_weight_table(self, trade_dict):
+        method = self.window_config['method']
 
-        if self.window_config['strategy'] == 0 or self.window_config['strategy'] == 1:
+        if self.window_config['strategy'] == 0:
+            self._weight_table, cash_flow, reallocated_date = FixedTarget(
+                self.window_config, self._profit_table, trade_dict
+            ).get_weight(method=method)
 
-            for ticker in self._group_ticker:
+        elif self.window_config['strategy'] == 1:
+            self._weight_table, cash_flow, reallocated_date = DynamicTarget(
+                self.window_config, self._profit_table, trade_dict
+            ).get_weight(method=method)
+        
+        return cash_flow, reallocated_date
 
-                if len(self.chosen_ticker) < self.window_config['position']:
-                    # 股價不為空 回測有資料 記錄起來
-                    if len(trade_dict[ticker]) != 0:
-                        # B&H的候選股 = 前position數量的標的 = 選中股
-                        self.chosen_ticker.append(ticker)
-
-                        strat_date = trade_dict[ticker][0][0]
-                        end_date = trade_dict[ticker][0][1]
-                        cash_flow_detail.append([{
-                            'ticker': ticker,
-                            'unit_equity': self.equity_table.loc[
-                                strat_date: end_date, ticker
-                            ],
-                        }])
-                else:
-                    break
-
-        elif self.window_config['strategy'] == 2:
-
-            tmep_ticker_list = []
-            # 預先創好所有可能會有的金流 陣列位置代表金流編號
-            cash_flow_detail = [[] for _ in range(self.window_config['position'])]
-            # 編號佇列
-            number_queue = [x for x in range(self.window_config['position'])]
-
-            # 每一天每個標的檢查
-            for date in self.equity_table.index:
-
-                # 如果目前有持有標的就要檢查 當天是否會出場
-                if len(tmep_ticker_list) != 0:
-                    for ticker in tmep_ticker_list:
-                        strat_date = trade_dict[ticker][0][0]
-                        end_date = trade_dict[ticker][0][1]
-                        # 代表金流編號 以及 要放在 cash_flow_detail 哪個位置
-                        number = trade_dict[ticker][0][2]
-
-                        if date == end_date:
-                            # 空出一個位置 等待尋找新標的
-                            tmep_ticker_list.remove(ticker)
-                            number_queue.append(number)
-                            trade_dict[ticker].pop(0)
-
-                for ticker in self._group_ticker:
-
-                    if len(trade_dict[ticker]) != 0:
-                        strat_date = trade_dict[ticker][0][0]
-                        end_date = trade_dict[ticker][0][1]
-
-                        # 投組還沒裝滿繼續找
-                        if len(tmep_ticker_list) < self.window_config['position']:
-                            # 標的不重複 且 今天=進場時間
-                            if ticker not in tmep_ticker_list and date == strat_date:
-                                # 找到新標的 發號碼牌 紀錄資料
-                                tmep_ticker_list.append(ticker)
-                                number = number_queue.pop(0)
-                                trade_dict[ticker][0].append(number)
-                                cash_flow_detail[number].append({
-                                    'ticker': ticker,
-                                    'unit_equity': self.equity_table.loc[
-                                        strat_date: end_date, ticker
-                                    ],
-                                })
-                                if ticker not in self.chosen_ticker:
-                                    self.chosen_ticker.append(ticker)
-                        else:
-                            break
-                    else:
-                        continue
-
-        return cash_flow_detail
-
-    def _allocate_weight(self, cash_flow_detail):
+    def _create_performance_table(self, cash_flow, reallocated_date):
+        # df = self._weight_table.dropna(axis=1, how='all')
+        # print(df)
+        # 初次窗格先創建預設 df
         if self.window_config['if_first'] == True:
-            performance_df = pd.DataFrame(
-                columns=['ticker', 'start', 'end', 'start_equity', 'final_equity', 'return']
+            portfo_perf = pd.DataFrame(
+                columns=['ticker', 'start', 'end', 'start_equity', 'final_equity', 'return', 'flow']
             )
-            equity_df = pd.DataFrame(columns=['date', 'portfolio_equity'])
+            portfo_equity = pd.DataFrame(columns=['date', 'total'])
+        # 後面的窗格直接讀即可
         else:
-            # 後面的窗格直接讀即可
-            performance_df = self.window_config['performance_df']
-            equity_df = self.window_config['equity_df']
+            portfo_perf = self.window_config['portfolio_performance']
+            portfo_equity = self.window_config['portfolio_equity']
 
-        window_equity_df = pd.DataFrame()
+        performance_table = pd.DataFrame()
+        portfolio_cash = self.window_config['cash']
+        commission = float(self._cfg.get_value('parameter', 'commission'))
+        # 紀錄每個金流中 目前該筆交易的初始資產
+        first_equity_queue = [0 for x in range(len(cash_flow))]
+        # 紀錄每個金流中 持有標的的每日權益值 (每天覆蓋)
+        flow_cash_queue = [0 for x in range(len(cash_flow))]
+        # 紀錄該天有哪個金流發生出場動作
+        if_exit_queue = []
+        daily_equity = 0
 
-        for i, flow in enumerate(cash_flow_detail):
-            df = self.equity_table[[self.equity_table.columns[0]]].copy()
-            df.loc[:, self.equity_table.columns[0]] = np.nan
-            df.columns = [i]
+        # 每天檢查
+        for date in self._profit_table.index:
+            # 當天績效
+            performance_dict = {}
+            performance_dict['date'] = date
+            temp_daily_equity = [0 for x in range(len(cash_flow))]
 
-            weight = self.window_config['cash'] / len(cash_flow_detail)
+            if date not in reallocated_date:
 
-            for trade in flow:
-                trade_df = trade['unit_equity']
+                # 每天檢查每個金流的持有標的
+                for i, flow in enumerate(cash_flow):
+                    if flow:
+                        ticker = flow[0]['ticker']
+                        start_date = flow[0]['start_date']
+                        end_date = flow[0]['end_date']
+                        weight = self._weight_table.loc[date, ticker]
 
-                scale = weight / trade_df.iloc[0]
-                trade_df = trade_df.multiply(scale)
+                        # 某金流中 第一個被分配權重的那天
+                        if date == start_date and type(weight) == float:
+                            # 按照投組目前總資金乘上分配到的權重
+                            equity = portfolio_cash * weight
+                            # 計算進場手續費
+                            equity = equity * (1 - commission)
+                            first_equity_queue[i] = equity
+                            flow_cash_queue[i] = equity
+                            performance_dict[i] = equity
+                            temp_daily_equity[i] = equity
+                        
+                        # 繼續持有當中包含出場當天
+                        elif date > start_date and date <= end_date and weight == '-':
+                            profit = self._profit_table.loc[date, ticker]
+                            equity = flow_cash_queue[i] * profit
 
-                performance_df = performance_df.append({
-                    'ticker': trade['ticker'],
-                    'start': trade_df.index[0],
-                    'end': trade_df.index[-1],
-                    'start_equity': trade_df.iloc[0],
-                    'final_equity': trade_df.iloc[-1],
-                    'return': (trade_df.iloc[-1]-trade_df.iloc[0])/trade_df.iloc[0]*100,
-                }, ignore_index=True)
+                            # 當天出場
+                            if date == end_date:
+                                # 計算出場手續費
+                                equity = equity * (1 - commission)
+                                portfo_perf = portfo_perf.append({
+                                    'ticker': ticker,
+                                    'start': start_date,
+                                    'end': end_date,
+                                    'start_equity': first_equity_queue[i],
+                                    'final_equity': equity,
+                                    'return': (equity-first_equity_queue[i])/first_equity_queue[i]*100,
+                                    'flow': i,
+                                }, ignore_index=True)
+                                # 刪除已計算完成的交易
+                                cash_flow[i].pop(0)
+                                if_exit_queue.append(i)
 
-                df.loc[trade_df.index[0]: trade_df.index[-1], df.columns[0]] = trade_df
+                            flow_cash_queue[i] = equity
+                            performance_dict[i] = equity
+                            temp_daily_equity[i] = equity
 
-                weight = trade_df.iloc[-1]
+                        # 上一個金流的賺賠直接歐印新標的
+                        elif date == start_date and weight == '-':
+                            # 計算進場手續費
+                            equity = flow_cash_queue[i] * (1 - commission)
+                            first_equity_queue[i] = equity
+                            flow_cash_queue[i] = equity
+                            performance_dict[i] = equity
+                            temp_daily_equity[i] = equity
+                
+                # 當天投組有部位出場
+                if len(if_exit_queue) != 0:
+                    # 檢查出場的部位
+                    for j in if_exit_queue:
+                        # 排除該部位已經是最後一筆交易情況
+                        if len(cash_flow[j]) != 0:
+                            start_date = cash_flow[j][0]['start_date']
+                            # 原部位出場的當天又有新部位進場
+                            if date == start_date:
+                                # 計算進場手續費
+                                equity = flow_cash_queue[j] * (1 - commission)
+                                first_equity_queue[j] = equity
+                                flow_cash_queue[j] = equity
+                                performance_dict[j] = equity
+                                temp_daily_equity[j] = equity
+                # 當天執行完清空陣列
+                if_exit_queue = []
 
-            window_equity_df = df if window_equity_df.empty else window_equity_df.join(df)
-        
-        window_equity_df = window_equity_df.fillna(method='ffill').fillna(method='bfill')
-        window_equity_df['portfolio_equity'] = window_equity_df.iloc[:, :].sum(axis=1)
-        
-        equity_record = window_equity_df[['portfolio_equity']].reset_index().to_dict('records')
-        equity_df = equity_df.append(equity_record, ignore_index=True)
-        
-        self.window_config['performance_df'] = performance_df
-        self.window_config['equity_df'] = equity_df
+                if sum(temp_daily_equity) != 0:
+                    daily_equity = sum(temp_daily_equity)
+
+            else:
+                org_equity_list = [0 for x in range(len(cash_flow))]
+
+                for i, flow in enumerate(cash_flow):
+                    if flow:
+                        ticker = flow[0]['ticker']
+                        start_date = flow[0]['start_date']
+                        end_date = flow[0]['end_date']
+                        weight = self._weight_table.loc[date, ticker]
+                        
+                        if date > start_date and date <= end_date:
+                            profit = self._profit_table.loc[date, ticker]
+                            equity = flow_cash_queue[i] * profit
+                            # 計算出場手續費
+                            equity = equity * (1 - commission)
+                            org_equity_list[i] = equity
+
+                            if date == end_date:
+                                portfo_perf = portfo_perf.append({
+                                    'ticker': ticker,
+                                    'start': start_date,
+                                    'end': end_date,
+                                    'start_equity': first_equity_queue[i],
+                                    'final_equity': equity,
+                                    'return': (equity-first_equity_queue[i])/first_equity_queue[i]*100,
+                                    'flow': i,
+                                }, ignore_index=True)
+                                # 刪除已計算完成的交易
+                                cash_flow[i].pop(0)
+                                flow_cash_queue[i] = equity
+                
+                first_flag = True if sum(flow_cash_queue) == 0 else False
+
+                for i, flow in enumerate(cash_flow):
+                    if flow:
+                        ticker = flow[0]['ticker']
+                        start_date = flow[0]['start_date']
+                        end_date = flow[0]['end_date']
+                        weight = self._weight_table.loc[date, ticker]
+
+                        if sum(org_equity_list) != 0:
+                            if date == start_date:
+                                equity = sum(org_equity_list) * weight
+                                # 計算進場手續費
+                                equity = equity * (1 - commission)
+                                first_equity_queue[i] = equity
+                                flow_cash_queue[i] = equity
+                                performance_dict[i] = equity
+                            
+                            elif date > start_date and date < end_date:
+                                equity = sum(org_equity_list) * weight
+                                payable_commission = abs(org_equity_list[i]-equity)
+                                paid_commission = org_equity_list[i]
+                                receivable_commission = (paid_commission-payable_commission)*commission
+                                equity = equity + receivable_commission
+                                flow_cash_queue[i] = equity
+                                performance_dict[i] = equity
+                        
+                        else:
+                            if first_flag == True:
+                                equity = portfolio_cash * weight
+                            else:
+                                equity = daily_equity * weight
+
+                            if date == start_date:
+                                # 計算進場手續費
+                                equity = equity * (1 - commission)
+                                first_equity_queue[i] = equity
+                                flow_cash_queue[i] = equity
+                                performance_dict[i] = equity
+
+            
+            performance_table = performance_table.append(performance_dict, ignore_index=True)
+
+        performance_table = performance_table.set_index('date')
+
+        if len(reallocated_date) == 0:
+            performance_table = performance_table.fillna(method='ffill').fillna(method='bfill')
+            performance_table['total'] = performance_table.iloc[:, :].sum(axis=1)
+        else:
+            performance_table['total'] = performance_table.iloc[:, :].sum(axis=1).replace({0: np.nan})
+            performance_table = performance_table.fillna(method='ffill').fillna(method='bfill')
+
+        equity_record = performance_table[['total']].reset_index().to_dict('records')
+        # 串接績效
+        portfo_equity = portfo_equity.append(equity_record, ignore_index=True)
+        # 重新賦值
+        self.window_config['portfolio_performance'] = portfo_perf
+        self.window_config['portfolio_equity'] = portfo_equity
+        # print(performance_table)

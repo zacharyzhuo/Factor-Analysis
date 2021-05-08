@@ -159,14 +159,12 @@ class NodeMsgHandler:
             try:
                 start = time.time()
                 strategy_config = {
+                    'factor': task_detail['factor'],
                     'strategy': task_detail['strategy'],
-                    'factor_list': task_detail['factor'],
-                    'n_season': task_detail['n_season'],
+                    'window': task_detail['window'],
+                    'method': task_detail['method'],
                     'group': task_detail['group'],
                     'position': task_detail['position'],
-                    'start_equity': int(self._cfg.get_value('parameter', 'start_equity')),
-                    'start_date': self._cfg.get_value('parameter', 'start_date'),
-                    'end_date': self._cfg.get_value('parameter', 'end_date'),
                 }
                 my_stra = MyAsset(strategy_config, cal, fac)
                 end = time.time()

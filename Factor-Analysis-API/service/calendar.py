@@ -142,5 +142,10 @@ class Calendar:
             else:
                 if report_date >= date:
                     result_list.append(report_date)
+        try:
 
-        return result_list[how]
+            result = result_list[how]
+        except Exception as e:
+            result = 0
+
+        return result

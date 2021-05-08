@@ -12,13 +12,15 @@ class FactorAnalysisHandler:
     def add_task_to_db(self, request):
         current_time = str(datetime.now())
         sql = "INSERT INTO `task` \
-                VALUES      ('0', %(factor_list)s, %(strategy_list)s, %(group_list)s, %(position_list)s, %(n_season)s, %(begin_time)s)"
+                VALUES      ('0', %(factor_list)s, %(strategy_list)s, %(window_list)s, %(method_list)s, \
+                                    %(group_list)s, %(position_list)s, %(begin_time)s)"
         args = {
             "factor_list": self._general.factor_list_to_string(request['factor_list']),
             "strategy_list": self._general.list_to_string(request['strategy_list']),
+            "window_list": self._general.list_to_string(request['window_list']),
+            "method_list": self._general.list_to_string(request['method_list']),
             "group_list": self._general.list_to_string(request['group_list']),
             "position_list": self._general.list_to_string(request['position_list']),
-            "n_season": str(request['n_season']),
             "begin_time": str(current_time),
         }
         status, row, result = self._dbmgr.insert(sql, args)
@@ -32,22 +34,26 @@ class FactorAnalysisHandler:
         for task_list in combination:
             factor = task_list[0]
             strategy = task_list[1]
-            group = task_list[2]
-            position = task_list[3]
+            window = task_list[2]
+            method = task_list[3]
+            group = task_list[4]
+            position = task_list[5]
             args.append({
                 "task_id": str(task_id),
                 "factor": self._general.list_to_string(factor),
                 "strategy": str(strategy),
+                "window": str(window),
+                "method": str(method),
                 "group": str(group),
                 "position": str(position),
-                "n_season": str(task_result["n_season"]),
                 "finish_time": str(''),
                 "owner": str(''),
                 "status": str('0'),
             })
 
         sql = " INSERT INTO `task_status` \
-                VALUES      ('0', %(task_id)s, %(factor)s, %(strategy)s, %(group)s, %(position)s, %(n_season)s, %(finish_time)s, %(owner)s, %(status)s)"
+                VALUES      ('0', %(task_id)s, %(factor)s, %(strategy)s, %(window)s, %(method)s, \
+                                    %(group)s, %(position)s, %(finish_time)s, %(owner)s, %(status)s)"
         status, row, result = self._dbmgr.insert(sql, args, multiple=True)
 
     def check_unfinished_task(self):
@@ -73,11 +79,15 @@ class FactorAnalysisHandler:
                 FROM    `task` \
                 WHERE   `factor_list` = %(factor_list)s AND \
                         `strategy_list` = %(strategy_list)s AND \
+                        `window_list` = %(window_list)s AND \
+                        `method_list` = %(method_list)s AND \
                         `group_list` = %(group_list)s AND \
                         `position_list` = %(position_list)s"
         args = {
             "factor_list": self._general.factor_list_to_string(request['factor_list']),
             "strategy_list": self._general.list_to_string(request['strategy_list']),
+            "window_list": self._general.list_to_string(request['window_list']),
+            "method_list": self._general.list_to_string(request['method_list']),
             "group_list": self._general.list_to_string(request['group_list']),
             "position_list": self._general.list_to_string(request['position_list']),
         }
@@ -103,6 +113,8 @@ class FactorAnalysisHandler:
                 'task_id': task_id,
                 'factor_list': [],
                 'strategy_list': [],
+                'window_list': [],
+                'method_list': [],
                 'group_list': [],
                 'position_list': [],
             }
@@ -111,6 +123,8 @@ class FactorAnalysisHandler:
                 'task_id': task_id,
                 'factor_list': self._general.factor_string_to_list(task_info['factor_list']),
                 'strategy_list': self._general.string_to_list(task_info['strategy_list']),
+                'window_list': self._general.string_to_list(task_info['window_list']),
+                'method_list': self._general.string_to_list(task_info['method_list']),
                 'group_list': self._general.string_to_list(task_info['group_list']),
                 'position_list': self._general.string_to_list(task_info['position_list']),
             }

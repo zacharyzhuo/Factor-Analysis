@@ -19,9 +19,10 @@ factor_list = [
 request = {
     "factor_list": factor_list,
     "strategy_list": [1],
-    "group_list": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "position_list": [5, 10, 15, 30, 90, 150],
-    "n_season": 0,
+    "window_list": [0, 2],
+    "method_list": [0, 1],
+    "group_list": [1],
+    "position_list": [5, 10],
 }
 
 
