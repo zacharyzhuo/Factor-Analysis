@@ -7,7 +7,6 @@ import pathos
 from multiprocessing import Pool
 from utils.config import Config
 from utils.general import General
-from utils.plot import Plot
 
 
 class PortfolioAnalysis:
@@ -70,7 +69,7 @@ class PortfolioAnalysis:
             str(para_list[3])
         )
 
-        performance_df = pd.read_csv("{}{}.csv".format(path, file_name)).drop('Unnamed: 0', axis=1)
+        # performance_df = pd.read_csv("{}{}.csv".format(path, file_name)).drop('Unnamed: 0', axis=1)
 
         with open(path+file_name+'.json', 'r') as file:
             json_data = json.load(file)
@@ -82,7 +81,7 @@ class PortfolioAnalysis:
         return {
             'file_name': file_name,
             'strategy': para_list[1],
-            'performance_df': performance_df,
+            # 'performance_df': performance_df,
             'equity_df': equity_df,
         }
 
@@ -122,7 +121,7 @@ class PortfolioAnalysis:
             porfolio_performance_list.append(MDD)
 
             # 把除了檔名的值都取到小數點後兩位
-            porfolio_performance_list[1:] = [round(x, 2) for x in porfolio_performance_list[1:]]
+            # porfolio_performance_list[1:] = [round(x, 2) for x in porfolio_performance_list[1:]]
             rows.append(porfolio_performance_list)
         
         column_name = ['file_name', 'Net Profit (%)', 'CAGR (%)', 'MDD (%)']

@@ -24,21 +24,22 @@ factor_list = [
 factor_list = [
     ['EV_EBITDA', 'ROIC'], ['P_B', 'EPS'], ['FCF_P', 'MOM'],
     # ['FCF_OI', 'P_S'], ['FCF_P'], ['EV_EBITDA'],
-    # ['P_B'], ['P_S'], ['MOM_7m'],
+    # ['P_B'], ['P_S'], ['MOM'],
     # ['EPS'], ['ROIC'], ['FCF_OI']
 ]
+factor_list = [
+    ['FCF_P', 'MOM'],
+    ['EV_EBITDA'],
+]
 request = {
-    # "strategy_list": [0, 1],
-    # "window_list": [0, 1, 2],
-    # "group_list": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    # "position_list": [5, 10, 15, 30, 90, 150],
-
     "factor_list": factor_list,
-    # "strategy_list": [0],
-    "window_list": [0],
-    "method_list": [0],
-    "group_list": [1, 2, 3, 4, 5],
-    "position_list": [6, 15, 60, 150, 300],
+    "strategy_list": [0, 1],
+    "window_list": [0, 2],
+    "method_list": [0, 1],
+    # "group_list": [1, 2, 3, 4, 5],
+    # "position_list": [6, 15, 60, 150, 300],
+    "group_list": [1],
+    "position_list": [15],
 }
 
 # 使用 multiprocessing 必須加上
@@ -46,6 +47,40 @@ if __name__ == "__main__":
     freeze_support()
     general = General()
     cfg = Config()
+
+    api_server_IP = cfg.get_value('IP', 'api_server_IP')
+
+    request["factor_list"] = general.factor_list_to_string(request["factor_list"])
+    response = requests.get("http://{}/task/get_task_combi".format(api_server_IP), params=request)
+    combination = json.loads(response.text)['result']
+
+    print(combination)
+
+    try:
+        for task in combination:
+            factor_str = general.factor_to_string(task[0])
+            path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
+            file_name = "{}_{}_{}_{}_{}".format(factor_str, task[1], request['n_season'], task[2], task[3])
+            file = pathlib.Path("{}/{}.csv".format(path, file_name))
+
+            if file.exists():
+                print('file exist!')
+                break
+
+            else:
+                start = time.time()
+                strategy_config = {
+                    'factor_list': task[0],
+                    'strategy': task[1],
+                    'window': request['window'][0],
+                    'group': task[2],
+                    'position': task[3],
+                }
+                my_stra = MyAsset(strategy_config, cal, fac)
+                end = time.time()
+                print("Execution time: %f second" % (end - start))
+    except Exception as e:
+        print(e)
 
     cal = Calendar('TW')
     get_factor_start = time.time()
@@ -60,7 +95,7 @@ if __name__ == "__main__":
                     for method in request['method_list']:
                         stra_start = time.time()
 
-                        strategy = 0
+                        strategy = 1
 
                         factor_str = general.factor_to_string(factor)
                         path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
@@ -86,37 +121,4 @@ if __name__ == "__main__":
 
                             stra_end = time.time()
                             print("run strategy time: {} second".format(stra_end - stra_start))
-
-    
-    # try:
-    #     for task in general.combinate_parameter(
-    #         request['factor_list'],
-    #         request['strategy_list'],
-    #         request['group_list'],
-    #         request['position_list']
-    #     ):
-
-    #         factor_str = general.factor_to_string(task[0])
-    #         path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
-    #         file_name = "{}_{}_{}_{}_{}".format(factor_str, task[1], request['n_season'], task[2], task[3])
-    #         file = pathlib.Path("{}/{}.csv".format(path, file_name))
-
-    #         if file.exists():
-    #             print('file exist!')
-    #             break
-
-    #         else:
-    #             start = time.time()
-    #             strategy_config = {
-    #                 'factor_list': task[0],
-    #                 'strategy': task[1],
-    #                 'window': request['window'][0],
-    #                 'group': task[2],
-    #                 'position': task[3],
-    #             }
-    #             my_stra = MyAsset(strategy_config, cal, fac)
-    #             end = time.time()
-    #             print("Execution time: %f second" % (end - start))
-    # except Exception as e:
-    #     print(e)
        

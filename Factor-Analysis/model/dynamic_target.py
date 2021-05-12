@@ -76,7 +76,7 @@ class DynamicTarget:
                             # 每個金流第一筆皆為初始資金依照權重所分配
                             if len(cash_flow[number]) == 0:
                                 weight_table.loc[date, ticker] = weight
-                            # 中間換股過後初始權重為前一比交易的最終資產
+                            # 中間換股過後初始權重為前一筆交易的最後賺賠
                             else:
                                 weight_table.loc[date, ticker] = '-'
                             
@@ -91,6 +91,7 @@ class DynamicTarget:
                     continue
 
             # 隨時讓投組保持滿水位
+            # 當尋找到新標的時 & 有部位出場時要重新分配
             if method == 1 and if_reallocate == True:
                 if len(daily_ticker) != 0:
                     weight_list = [1/len(daily_ticker) for x in range(len(daily_ticker))]

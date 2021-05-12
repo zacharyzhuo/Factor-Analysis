@@ -2,7 +2,6 @@ import pandas as pd
 import datetime
 from utils.config import Config
 from package.window import Window
-from utils.plot import Plot
 
 
 class Portfolio:

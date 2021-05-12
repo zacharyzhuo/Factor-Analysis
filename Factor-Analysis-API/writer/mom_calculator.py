@@ -54,7 +54,7 @@ class MOMCalculator:
             )
             temp_df['price_1'] = temp_df['date'].apply(lambda date: stk_df.loc[date]['close'])
             temp_df['price_2'] = temp_df['report_date'].apply(lambda date: np.nan if date == 0 else stk_df.loc[date]['close'])
-            temp_df[ticker] = (temp_df['price_1'] - temp_df['price_2']) / temp_df['price_2']
+            temp_df[ticker] = (temp_df['price_2'] - temp_df['price_1']) / temp_df['price_1']
             temp_df = temp_df.set_index('date')[[ticker]]
             print(temp_df)
             self._df[ticker] = temp_df[ticker]

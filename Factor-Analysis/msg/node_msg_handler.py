@@ -4,10 +4,12 @@ import os
 import psutil
 import socket
 import time
+import pathlib
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 from datetime import datetime
 from utils.config import Config
+from utils.general import General
 from utils.dbmgr import DBMgr
 from task.factor_analysis_task import FactorAnalysisTask
 from service.calendar import Calendar
@@ -20,6 +22,7 @@ class NodeMsgHandler:
     def __init__(self):
         self._cfg = Config()
         self._dbmgr = DBMgr()
+        self._general = General()
 
         # 基本參數 (伺服器設定值)
         self._processes = os.cpu_count()  # 伺服器CPU核心數
@@ -166,12 +169,30 @@ class NodeMsgHandler:
                     'group': task_detail['group'],
                     'position': task_detail['position'],
                 }
-                my_stra = MyAsset(strategy_config, cal, fac)
-                end = time.time()
-                print("Execution time: %f second" % (end - start))
-                
-                # status: 0 - undo, 1 - success, 2 - error
-                self._publish_factor_analysis_task_finish(task_detail['task_status_id'], 1)
+
+                factor_str = self._general.factor_to_string(task_detail['factor'])
+                path = self._cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
+                file_name = "{}_{}_{}_{}_{}_{}".format(
+                    factor_str,
+                    task_detail['strategy'],
+                    task_detail['window'],
+                    task_detail['method'],
+                    task_detail['group'],
+                    task_detail['position']
+                )
+                file = pathlib.Path("{}/{}.csv".format(path, file_name))
+
+                if file.exists():
+                    self._publish_factor_analysis_task_finish(task_detail['task_status_id'], 1)
+
+                else:
+                    my_stra = MyAsset(strategy_config, cal, fac)
+                    end = time.time()
+                    print("Execution time: %f second" % (end - start))
+
+                    # status: 0 - undo, 1 - success, 2 - error
+                    self._publish_factor_analysis_task_finish(task_detail['task_status_id'], 1)
+
             except Exception as e:
                 # status: 0 - undo, 1 - success, 2 - error
                 self._publish_factor_analysis_task_finish(task_detail['task_status_id'], 2)

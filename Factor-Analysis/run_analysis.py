@@ -24,15 +24,15 @@ if __name__ == "__main__":
     ]
 
     factor_list = [
-        # ['EV_EBITDA', 'ROIC'],
-        ['P_B', 'EPS'],
-        # ['FCF_P', 'MOM_7m'],
+        ['EV_EBITDA', 'ROIC'],
+        # ['P_B', 'EPS'],
+        # ['FCF_P', 'MOM'],
         # ['FCF_OI', 'P_S'],
         # ['FCF_P'], 
         # ['EV_EBITDA'],
         # ['P_B'], 
         # ['P_S'], 
-        # ['MOM_7m'],
+        # ['MOM'],
         # ['EPS'], 
         # ['ROIC'], 
         # ['FCF_OI']
@@ -40,24 +40,25 @@ if __name__ == "__main__":
 
     request = {
         'factor_list': factor_list,
-        'strategy_list': [0],
+        'strategy_list': [1],
         'window_list': [0],
         'method_list': [0],
-        'group_list': [1, 2, 3, 4, 5], 
-        # 'position_list':[6, 15, 60, 150, 300],
-        'position_list':[15],
+        # 'group_list': [1, 2, 3, 4, 5], 
+        'group_list': [1], 
+        'position_list':[6, 15, 60, 150, 300],
+        # 'position_list':[6, 15],
     }
-    Analysis().plot_equity_curve(request)
+    # Analysis().plot_equity_curve(request)
 
     request = {
         'factor_list': factor_list,
         'strategy_list': [1],
-        'window_list': [2],
+        'window_list': [0],
         'method_list': [0, 1],
         'group_list': [1], 
         'position_list':[5],
     }
-    # Analysis().check_cap_util_rate(request)
+    Analysis().check_cap_util_rate(request)
 
     # ======================================================
 

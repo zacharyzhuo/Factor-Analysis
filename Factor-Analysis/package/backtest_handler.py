@@ -51,6 +51,7 @@ class BacktestHandler:
     def t2_backtest(self, t2_period):
         self._period = t2_period
         max_ma = int(self._cfg.get_value('parameter', 'max_ma'))
+        last_date = self._cfg.get_value('parameter', 'end_date')
 
         # 買入持有策略
         if self.window_config['strategy'] == 0:
@@ -61,8 +62,13 @@ class BacktestHandler:
         elif self.window_config['strategy'] == 1:
             # 因為要算均線所以要往前多抓幾天
             start_date = self._cal.get_trade_date(self._period[0], (1+max_ma)*-1, 'd')
-        # 必須要往後多抓一天 不然第一天跟最後一天不能交易
-        end_date = self._cal.get_trade_date(self._period[1], 1, 'd')
+        
+        if self._period[1] < last_date:
+            # 必須要往後多抓一天 不然第一天跟最後一天不能交易
+            end_date = self._cal.get_trade_date(self._period[1], 1, 'd')
+        
+        else:
+            end_date = last_date
 
         stk_price_dict = self._get_stk_price([start_date, end_date])
         results = self._run_backtest(stk_price_dict)
@@ -140,10 +146,12 @@ class BacktestHandler:
                         )
                     
                     else:
+                        # 固定參數
                         if self.window_config['window'] == 0:
                             ma_len = int(self._cfg.get_value('parameter', 'ma_len'))
                             band_width = float(self._cfg.get_value('parameter', 'band_width'))
 
+                        # 套用最佳化參數
                         elif self.window_config['window'] == 1 or self.window_config['window'] == 2:
                             ma_len = self._optimized_param[ticker]['ma_len']
                             band_width = self._optimized_param[ticker]['band_width']
@@ -210,8 +218,15 @@ class BacktestHandler:
                 stk_df = ((stk_df['Close']-stk_df['shift'])/stk_df['shift'] + 1).to_frame()
                 stk_df.columns = [ticker]
 
+                # 抓此窗格內的所有交易日
+                trade_date_list = self._cal.get_period_trade_date(self._period[0], self._period[1])
+
                 if self._profit_table.empty:
-                    self._profit_table = stk_df
+                    # 以這些交易日做好profit_table的框
+                    self._profit_table['date'] = trade_date_list
+                    # 拼接每個標的的賺賠
+                    self._profit_table = self._profit_table.set_index('date').join(stk_df)
+                
                 else:
                     self._profit_table = self._profit_table.join(stk_df)
 
@@ -221,7 +236,7 @@ class BacktestHandler:
                     trade_list.append([row['EntryTime'], row['ExitTime']])
                 
                 trade_dict[ticker] = trade_list
-
+                
         # 依照因子排序的順序來調整column
         self._profit_table = self._profit_table[self.group_ticker]
 
@@ -230,11 +245,13 @@ class BacktestHandler:
     def _create_weight_table(self, trade_dict):
         method = self.window_config['method']
 
+        # 買入持有
         if self.window_config['strategy'] == 0:
             self._weight_table, cash_flow, reallocated_date = FixedTarget(
                 self.window_config, self._profit_table, trade_dict
             ).get_weight(method=method)
 
+        # 布林通道動態換股
         elif self.window_config['strategy'] == 1:
             self._weight_table, cash_flow, reallocated_date = DynamicTarget(
                 self.window_config, self._profit_table, trade_dict
@@ -245,6 +262,7 @@ class BacktestHandler:
     def _create_performance_table(self, cash_flow, reallocated_date):
         # df = self._weight_table.dropna(axis=1, how='all')
         # print(df)
+
         # 初次窗格先創建預設 df
         if self.window_config['if_first'] == True:
             portfo_perf = pd.DataFrame(
@@ -274,6 +292,7 @@ class BacktestHandler:
             performance_dict['date'] = date
             temp_daily_equity = [0 for x in range(len(cash_flow))]
 
+            # 如果該天不用重新分配權重
             if date not in reallocated_date:
 
                 # 每天檢查每個金流的持有標的
@@ -351,9 +370,12 @@ class BacktestHandler:
                 if sum(temp_daily_equity) != 0:
                     daily_equity = sum(temp_daily_equity)
 
+            # 要重新分配權重
             else:
+                # 紀錄計算完該天賺賠後的初始賺賠 以後續計算回補手續費
                 org_equity_list = [0 for x in range(len(cash_flow))]
 
+                # 加總目前投組的權益
                 for i, flow in enumerate(cash_flow):
                     if flow:
                         ticker = flow[0]['ticker']
@@ -382,8 +404,10 @@ class BacktestHandler:
                                 cash_flow[i].pop(0)
                                 flow_cash_queue[i] = equity
                 
+                # 判斷是否為該窗格第一筆被分配權重的交易
                 first_flag = True if sum(flow_cash_queue) == 0 else False
 
+                # 按照該分配的比例分配
                 for i, flow in enumerate(cash_flow):
                     if flow:
                         ticker = flow[0]['ticker']
@@ -391,6 +415,7 @@ class BacktestHandler:
                         end_date = flow[0]['end_date']
                         weight = self._weight_table.loc[date, ticker]
 
+                        # 權重分配當天有持有部位 包含當天出場的部位
                         if sum(org_equity_list) != 0:
                             if date == start_date:
                                 equity = sum(org_equity_list) * weight
@@ -409,7 +434,9 @@ class BacktestHandler:
                                 flow_cash_queue[i] = equity
                                 performance_dict[i] = equity
                         
+                        # 權重分配當天未持有部位 代表空手一段時間後找到新標的 或者在窗格第一筆權重分配
                         else:
+                            # 窗格第一筆權重分配
                             if first_flag == True:
                                 equity = portfolio_cash * weight
                             else:
@@ -421,15 +448,17 @@ class BacktestHandler:
                                 first_equity_queue[i] = equity
                                 flow_cash_queue[i] = equity
                                 performance_dict[i] = equity
-
             
             performance_table = performance_table.append(performance_dict, ignore_index=True)
 
         performance_table = performance_table.set_index('date')
 
+        # 等權重分配: 錢不會在金流之間跳動
         if len(reallocated_date) == 0:
             performance_table = performance_table.fillna(method='ffill').fillna(method='bfill')
             performance_table['total'] = performance_table.iloc[:, :].sum(axis=1)
+        
+        # 資金最大化利用分配: 錢會不斷的重新分配
         else:
             performance_table['total'] = performance_table.iloc[:, :].sum(axis=1).replace({0: np.nan})
             performance_table = performance_table.fillna(method='ffill').fillna(method='bfill')

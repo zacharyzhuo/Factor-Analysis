@@ -44,7 +44,7 @@ class FactorAnalysisTaskHandler:
         # 需要創建不同組合工作
         else:
             payloads = {
-                'factor_list': self._request['factor_list'],
+                'factor_list': self._general.factor_list_to_string(self._request['factor_list']),
                 'strategy_list': self._request['strategy_list'],
                 'window_list': self._request['window_list'],
                 'method_list': self._request['method_list'],

@@ -13,7 +13,13 @@ class BBandsWindow(Strategy):
 
     def init(self):
         super().init()
-        up_band, mid, down_band = BBANDS(self.data.Close, timeperiod=self.ma_len, nbdevup=self.band_width, nbdevdn=self.band_width, matype=0)
+        up_band, mid, down_band = BBANDS(
+            self.data.Close, 
+            timeperiod=self.ma_len, 
+            nbdevup=self.band_width, 
+            nbdevdn=self.band_width, 
+            matype=0
+        )
 
         self.up_band = self.I(lambda x: up_band, 'up_band')
         self.mid = self.I(lambda x: mid, 'mid')

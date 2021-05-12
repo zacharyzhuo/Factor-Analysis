@@ -69,4 +69,4 @@ class MyAsset:
         portfolio_equity['date'] = portfolio_equity['date'].dt.strftime('%Y-%m-%d')
         with open(path + '.json', 'w') as file:
             json.dump(portfolio_equity.to_dict(), file)
-        print('[MyAsset]: completed writing porfolio performance files')
+        print('[MyAsset]: completed writing portfolio performance files')

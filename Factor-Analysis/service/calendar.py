@@ -95,6 +95,16 @@ class Calendar:
                 target_date = target_date_df['date'].iloc[0]
             
             return target_date.strftime('%Y-%m-%d')
+    
+    def get_period_trade_date(self, start, end):
+        df = self._date_df
+
+        if type(start) is str:
+            start = datetime.strptime(start, "%Y-%m-%d")
+        if type(end) is str:
+            end = datetime.strptime(end, "%Y-%m-%d")
+
+        return df.loc[(df['date'] >= start) & (df['date'] <= end)]['date'].to_list()
 
     # 抓出指定日期內所有財報公布日
     # input: start_date   : 開始日
