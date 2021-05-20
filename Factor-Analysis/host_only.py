@@ -28,18 +28,18 @@ factor_list = [
     # ['EPS'], ['ROIC'], ['FCF_OI']
 ]
 factor_list = [
-    ['FCF_P', 'MOM'],
-    ['EV_EBITDA'],
+    ['FCF_P'],
+    # ['EV_EBITDA'],
 ]
 request = {
     "factor_list": factor_list,
-    "strategy_list": [0, 1],
-    "window_list": [0, 2],
-    "method_list": [0, 1],
+    "strategy_list": [1],
+    "window_list": [0],
+    "method_list": [0],
     # "group_list": [1, 2, 3, 4, 5],
     # "position_list": [6, 15, 60, 150, 300],
     "group_list": [1],
-    "position_list": [15],
+    "position_list": [150],
 }
 
 # 使用 multiprocessing 必須加上
@@ -47,16 +47,18 @@ if __name__ == "__main__":
     freeze_support()
     general = General()
     cfg = Config()
+    cal = Calendar('TW')
+    fac = Factor(general.get_distinct_factor_list(factor_list))
 
     api_server_IP = cfg.get_value('IP', 'api_server_IP')
 
     request["factor_list"] = general.factor_list_to_string(request["factor_list"])
     response = requests.get("http://{}/task/get_task_combi".format(api_server_IP), params=request)
     combination = json.loads(response.text)['result']
-
     print(combination)
 
     try:
+
         for task in combination:
             factor_str = general.factor_to_string(task[0])
             path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
@@ -68,57 +70,20 @@ if __name__ == "__main__":
                 break
 
             else:
+
                 start = time.time()
                 strategy_config = {
-                    'factor_list': task[0],
+                    'factor': task[0],
                     'strategy': task[1],
-                    'window': request['window'][0],
-                    'group': task[2],
-                    'position': task[3],
+                    'window': task[2],
+                    'method': task[3],
+                    'group': task[4],
+                    'position': task[5],
                 }
                 my_stra = MyAsset(strategy_config, cal, fac)
                 end = time.time()
                 print("Execution time: %f second" % (end - start))
+
     except Exception as e:
         print(e)
-
-    cal = Calendar('TW')
-    get_factor_start = time.time()
-    fac = Factor(general.get_distinct_factor_list(factor_list))
-    get_factor_end = time.time()
-    print("Get factor time: {} second".format(get_factor_end - get_factor_start))
-
-    for factor in request['factor_list']:
-        for group in request['group_list']:
-            for position in request['position_list']:
-                for window in request['window_list']:
-                    for method in request['method_list']:
-                        stra_start = time.time()
-
-                        strategy = 1
-
-                        factor_str = general.factor_to_string(factor)
-                        path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
-                        file_name = "{}_{}_{}_{}_{}_{}".format(
-                            factor_str, strategy, window, method, group, position
-                        )
-                        file = pathlib.Path("{}/{}.csv".format(path, file_name))
-
-                        if file.exists():
-                            print('file exist!')
-                            continue
-
-                        else:
-                            strategy_config = {
-                                'factor': factor,
-                                'strategy': strategy,
-                                'window': window,
-                                'method': method,
-                                'group': group,
-                                'position': position,
-                            }
-                            my_stra = MyAsset(strategy_config, cal, fac)
-
-                            stra_end = time.time()
-                            print("run strategy time: {} second".format(stra_end - stra_start))
        

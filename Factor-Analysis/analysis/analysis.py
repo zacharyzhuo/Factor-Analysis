@@ -3,11 +3,10 @@ import numpy as np
 import requests
 import json
 from datetime import datetime
-from itertools import product
+import seaborn as sns
 import matplotlib.pyplot as plt
 from utils.config import Config
 from utils.general import General
-import matplotlib.pyplot as plt
 
 
 class Analysis:
@@ -16,7 +15,6 @@ class Analysis:
         self._cfg = Config()
         self._path = self._cfg.get_value('path', 'path_to_portfolio_performance')
         self._api_server_IP = self._cfg.get_value('IP', 'api_server_IP')
-        self._risk_free_rate = float(self._cfg.get_value('parameter', 'risk_free_rate'))
         self._start_equity = int(self._cfg.get_value('parameter', 'start_equity'))
         self._start_date = self._cfg.get_value('parameter', 'start_date')
         self._end_date = self._cfg.get_value('parameter', 'end_date')
@@ -24,12 +22,9 @@ class Analysis:
         self._general = General()
     
     def plot_equity_curve(self, request):
-        # response = requests.get("http://{}/task/get_task_combi".format(self._api_server_IP), params=request)
-        # combination = json.loads(response.text)['result']
-
         perf_ind_inf_str = ""
 
-        performance_df, equity_df = self._get_request_file(request)
+        equity_df, performance_df = self._read_request_files(request)
         perf_ind, equity_max = self._compute_performance_ind(equity_df)
 
         # 計算CAGR MDD MAR並製作顯示字串
@@ -68,8 +63,8 @@ class Analysis:
     def check_cap_util_rate(self, request):
         perf_ind_inf_str = ""
 
-        performance_df, equity_df = self._get_request_file(request)
-                
+        equity_df, performance_df = self._read_request_files(request)
+ 
         df = equity_df[[equity_df.columns[0]]].rename({equity_df.columns[0]: 0}, axis=1)
         df.loc[:, :] = np.nan
 
@@ -101,17 +96,7 @@ class Analysis:
 
         perf_ind_inf_str = perf_ind_inf_str + "\nCapital utilization rate: {}%".format(
             100 - round(df.loc[df['cap_util'] != position].shape[0] / df.shape[0] * 100, 2)
-        ) 
-        
-        # print(df.loc[df['cap_util'] != position])
-        # print("total: {}, not full: {}, pct: {}%".format(
-        #     df.shape[0], df.loc[df['cap_util'] != position].shape[0],
-        #     round(df.loc[df['cap_util'] != position].shape[0] / df.shape[0] * 100, 2)
-        # ))
-        print(equity_df)
-        print(perf_ind)
-        print(equity_max)
-        print(perf_ind_inf_str)
+        )
 
         ax = equity_df.iloc[:, :-1].plot.line(figsize=(12, 8))
 
@@ -140,7 +125,85 @@ class Analysis:
 
         plt.show()
 
-    def _read_portfo_perf_file(self, param):
+    def plot_performance_heatmap(self, request):
+        heatmap_df = pd.DataFrame(columns=[6, 15, 60, 150, 300])
+        strategy_str = ''
+
+        if request['strategy'] == 0:
+            strategy_str = 'Buy and Hold'
+        elif request['strategy'] == 1:
+            strategy_str = 'BBands'
+
+        df = self.query_performance_file()
+        df = df.loc[
+            (df['factor'] == request['factor']) &
+            (df['strategy'] == request['strategy']) &
+            (df['method'] == request['method'])
+        ]
+
+        for i in [1, 2, 3, 4, 5]:
+            cagr_list = []
+
+            for col in heatmap_df.columns:
+                cagr_list.append(
+                    df[request['perf_ind']].loc[
+                        (df['group']==i) & (df['position']==col)
+                    ].values[0]
+                )
+            
+            heatmap_df.loc[i] = cagr_list
+
+        print(heatmap_df)
+
+        ax = sns.heatmap(heatmap_df, cmap="YlGnBu")
+
+        ax.set_xlabel("Position")
+        ax.set_ylabel("Group")
+
+        ax.set_title("[{}] {} / {}".format(
+            request['perf_ind'], request['factor'], strategy_str)
+        )
+
+        plt.show()
+
+
+    def output_performance_file(self, request):
+        performance_df = pd.DataFrame(
+            columns=[
+                'factor', 'strategy', 'window', 'method', 'group',
+                'position', 'CAGR[%]', 'MDD[%]', 'MAR'
+            ]
+        )
+
+        response = requests.get("http://{}/task/get_task_combi".format(self._api_server_IP), params=request)
+        combination = json.loads(response.text)['result']
+        
+        for combi in combination:
+            equity_df, _ = self._read_file(combi)
+            ind_list, _ = self._compute_performance_ind(equity_df)
+
+            performance_df = performance_df.append({
+                'factor': self._general.factor_to_string(combi[0]),
+                'strategy': combi[1],
+                'window': combi[2],
+                'method': combi[3],
+                'group': combi[4],
+                'position': combi[5],
+                'CAGR[%]': ind_list[0][1],
+                'MDD[%]': ind_list[0][2],
+                'MAR': ind_list[0][3],
+            }, ignore_index=True)
+        
+        print(performance_df)
+        path = self._cfg.get_value('path', 'path_to_performance_indicator')
+        performance_df.to_csv(path+'performance_indicator.csv')
+
+    def query_performance_file(self):
+        path = self._cfg.get_value('path', 'path_to_performance_indicator')
+        performance_df = pd.read_csv(path+'performance_indicator.csv').drop('Unnamed: 0', axis=1)
+        return performance_df
+
+    def _read_file(self, param):
         # 將[fac1, fac2] 轉成 fac1&fac2
         factor_str = self._general.factor_to_string(param[0])
         path = "{}{}/".format(self._path, factor_str)
@@ -163,32 +226,24 @@ class Analysis:
         equity_df.columns = [file_name]
 
         print("read {}".format(file_name))
-        return performance_df, equity_df
+        return equity_df, performance_df
 
-    def _get_request_file(self, request):
+    def _read_request_files(self, request):
         equity_df = pd.DataFrame()
 
-        # 排列組合參數組合
-        data = (
-            request['factor_list'],
-            request['strategy_list'],
-            request['window_list'],
-            request['method_list'],
-            request['group_list'],
-            request['position_list'],
-        )
-        combination = list(product(*data))
+        response = requests.get("http://{}/task/get_task_combi".format(self._api_server_IP), params=request)
+        combination = json.loads(response.text)['result']
 
         # 讀檔並串接 equity
         for param in combination:
-            performance_df, temp_equity_df = self._read_portfo_perf_file(param)
+            temp_equity_df, performance_df = self._read_file(param)
 
             if equity_df.empty:
                 equity_df = temp_equity_df
             else:
                 equity_df = equity_df.join(temp_equity_df)
-        
-        return performance_df, equity_df
+
+        return equity_df, performance_df
 
     def _compute_performance_ind(self, df):
         result = []

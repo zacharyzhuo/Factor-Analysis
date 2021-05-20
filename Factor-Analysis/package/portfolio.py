@@ -25,7 +25,7 @@ class Portfolio:
             'end_date': self._cfg.get_value('parameter', 'end_date'),
             'n_season': int(self._cfg.get_value('parameter', 'n_season')),
             'cash': int(self._cfg.get_value('parameter', 'start_equity')),
-            'if_first': True,
+            'is_first': True,
             'factor_data': None,
             'portfolio_performance': pd.DataFrame(),
             'portfolio_equity': pd.DataFrame(),

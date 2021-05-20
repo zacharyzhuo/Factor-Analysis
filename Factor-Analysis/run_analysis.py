@@ -1,45 +1,45 @@
-import numpy as np
 from multiprocessing import Process, freeze_support
-from analysis.portfolio_analysis import PortfolioAnalysis
 from analysis.regression_analysis import RegressionAnalysis
 from analysis.analysis import Analysis
 from utils.general import General
 
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
 # 使用 multiprocessing 必須加上
 if __name__ == "__main__":
+    general = General()
+    analysis = Analysis()
     # freeze_support()
 
     factor_list = [
-        ['FCF_P', 'CROIC'], ['EV_EBITDA', 'ROIC'], ['P_B', 'EP'], ['ROE', 'P_B'],
-        ['ROIC', 'P_S'], ['CROIC', 'P_IC'], ['FCFPS', 'EV_EBITDA'], ['FCF_P', 'EPS'],
-        ['P_B', 'EPS'], ['FCF_P', 'MOM_7m'], ['EV_S', 'MOM_7m'], ['MOM_52w_PR', 'FCF_P'],
-        ['MOM_52w_PR', 'P_B'], ['EV_EBITDA', 'FCF_OI'], ['FCF_OI', 'P_S'], ['P_B', 'OCF_E']
-    ]
-
-    factor_list = [
-        ['EV_EBITDA', 'ROIC'], ['P_B', 'EPS'], ['FCF_P', 'MOM_7m'],
+        ['EV_EBITDA', 'ROIC'], ['P_B', 'EPS'], ['FCF_P', 'MOM'],
         ['FCF_OI', 'P_S'], ['FCF_P'], ['EV_EBITDA'],
-        ['P_B'], ['P_S'], ['MOM_7m'],
+        ['P_B'], ['P_S'], ['MOM'],
         ['EPS'], ['ROIC'], ['FCF_OI']
     ]
 
     factor_list = [
-        ['EV_EBITDA', 'ROIC'],
-        # ['P_B', 'EPS'],
-        # ['FCF_P', 'MOM'],
-        # ['FCF_OI', 'P_S'],
         # ['FCF_P'], 
         # ['EV_EBITDA'],
         # ['P_B'], 
         # ['P_S'], 
-        # ['MOM'],
+        ['MOM'],
         # ['EPS'], 
         # ['ROIC'], 
         # ['FCF_OI']
+        # ['EV_EBITDA', 'ROIC'],
+        # ['P_B', 'EPS'],
+        # ['FCF_P', 'MOM'],
+        # ['FCF_OI', 'P_S'],
     ]
 
+    # ======================================================
+
     request = {
-        'factor_list': factor_list,
+        'factor_list': general.factor_list_to_string(factor_list),
         'strategy_list': [1],
         'window_list': [0],
         'method_list': [0],
@@ -48,29 +48,63 @@ if __name__ == "__main__":
         'position_list':[6, 15, 60, 150, 300],
         # 'position_list':[6, 15],
     }
-    # Analysis().plot_equity_curve(request)
+    analysis.plot_equity_curve(request)
+    
+    # ======================================================
 
     request = {
-        'factor_list': factor_list,
+        'factor_list': general.factor_list_to_string(factor_list),
         'strategy_list': [1],
         'window_list': [0],
         'method_list': [0, 1],
         'group_list': [1], 
-        'position_list':[5],
+        'position_list':[6],
     }
-    Analysis().check_cap_util_rate(request)
+    # analysis.check_cap_util_rate(request)
+    
+    # ======================================================
+
+    request = {
+        'factor_list': general.factor_list_to_string(factor_list),
+        'strategy_list': [0, 1],
+        'window_list': [0],
+        'method_list': [0, 1],
+        'group_list': [1, 2, 3, 4, 5],
+        'position_list':[6, 15, 60, 150, 300],
+    }
+    # analysis.output_performance_file(request)
 
     # ======================================================
 
-    # for factor in factor_list:
-    #     request = {
-    #         'factor_list': factor, 
-    #         'strategy_list': [0],
-    #         # 'strategy_list': [0, 1, 2],
-    #         'group_list': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 
-    #         'position_list':[5, 10, 15, 30, 90, 150],
-    #     }
-    #     PortfolioAnalysis().run_portfolio_analysis(request)
+    request = {
+        'factor': general.factor_list_to_string(factor_list),
+        'strategy': 1,
+        'method': 0,
+        'perf_ind': 'CAGR[%]',
+        # 'perf_ind': 'MDD[%]',
+        # 'perf_ind': 'MAR',
+    }
+    # analysis.plot_performance_heatmap(request)
+
+    # ======================================================
+
+    request = {
+        'factor': general.factor_list_to_string(factor_list),
+        'strategy': 1,
+        'method': 0,
+    }
+    
+    df = analysis.query_performance_file()
+
+    df = df.loc[
+        (df['factor'] == request['factor']) &
+        (df['strategy'] == request['strategy']) &
+        (df['method'] == request['method'])
+    ]
+    
+    print(df)
+
+
 
     # request = {
     #     'factor_list': factor_list, 
@@ -79,4 +113,6 @@ if __name__ == "__main__":
     #     'target_list': ['Net Profit (%)', 'CAGR (%)', 'MDD (%)'],
     # }
     # RegressionAnalysis(request)
+    
+    # ======================================================
     

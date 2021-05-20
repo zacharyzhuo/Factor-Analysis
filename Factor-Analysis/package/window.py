@@ -22,7 +22,7 @@ class Window:
     
     # T1: 選股
     def _play_t1(self, date):
-        if self.window_config['if_first'] == True:
+        if self.window_config['is_first'] == True:
             date = self._cal.get_trade_date(date, -2, 's')
         else:
             date = self._cal.get_trade_date(date, -1, 's')
@@ -102,5 +102,5 @@ class Window:
         # 更新投組目前的現金
         self.window_config['cash'] = self.window_config['portfolio_equity'].iloc[-1]['total']
 
-        if self.window_config['if_first'] == True:
-            self.window_config['if_first'] = False
+        if self.window_config['is_first'] == True:
+            self.window_config['is_first'] = False

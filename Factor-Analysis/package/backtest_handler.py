@@ -264,7 +264,7 @@ class BacktestHandler:
         # print(df)
 
         # 初次窗格先創建預設 df
-        if self.window_config['if_first'] == True:
+        if self.window_config['is_first'] == True:
             portfo_perf = pd.DataFrame(
                 columns=['ticker', 'start', 'end', 'start_equity', 'final_equity', 'return', 'flow']
             )
@@ -455,6 +455,14 @@ class BacktestHandler:
 
         # 等權重分配: 錢不會在金流之間跳動
         if len(reallocated_date) == 0:
+
+            # 如果動態換股沒有買滿 要補上這些沒用到的錢
+            if len(performance_table.columns) != len(cash_flow):
+                cash_not_use = portfolio_cash / len(cash_flow)
+
+                for i in range(len(performance_table.columns)+1, len(cash_flow)+1):
+                    performance_table[i] = cash_not_use
+
             performance_table = performance_table.fillna(method='ffill').fillna(method='bfill')
             performance_table['total'] = performance_table.iloc[:, :].sum(axis=1)
         
