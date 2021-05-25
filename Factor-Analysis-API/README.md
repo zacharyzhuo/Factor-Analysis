@@ -1,15 +1,3 @@
-// 虛擬環境
-cd C:\Users\IPLAB2\Desktop\lab\Factor-Analysis-API
-.\Factor-Analysis-API\venv\Scripts\activate
-deactivate
-
-python -m venv venv
-pip freeze > requirements.txt
-python -m pip install -r requirements.txt
-
-
-server_ip = "http://140.115.87.197:8090/"
-
 # api usage
 <!-- calendar -->
 get trade day

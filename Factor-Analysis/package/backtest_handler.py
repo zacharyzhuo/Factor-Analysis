@@ -9,8 +9,8 @@ from backtesting import Backtest, Strategy
 from utils.config import Config
 from strategy.buy_and_hold import BuyAndHold
 from strategy.bbands import BBands
-from model.fixed_target import FixedTarget
-from model.dynamic_target import DynamicTarget
+from weight.fixed_target import FixedTarget
+from weight.dynamic_target import DynamicTarget
 
 
 class BacktestHandler:

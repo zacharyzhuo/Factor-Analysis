@@ -7,10 +7,10 @@ from writer.stock_writer import StockWriter
 from writer.stock_index_writer import StockIndexWriter
 
 
-# MOMCalculator()
+MOMCalculator()
 
-# CalendarWriter()
+CalendarWriter()
 IndicatorWriter()
 FactorWriter()
-# StockWriter()
-# StockIndexWriter()
+StockWriter()
+StockIndexWriter()

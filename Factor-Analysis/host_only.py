@@ -33,7 +33,7 @@ factor_list = [
 ]
 request = {
     "factor_list": factor_list,
-    "strategy_list": [1],
+    "strategy_list": [0, 1],
     "window_list": [0],
     "method_list": [0],
     # "group_list": [1, 2, 3, 4, 5],

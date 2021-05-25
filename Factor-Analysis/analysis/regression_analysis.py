@@ -10,8 +10,7 @@ from utils.general import General
 COLOR = [
     'red', 'orange', 'yellow', 'green',
     'skyblue', 'blue', 'purple', 'black',
-    'grey', 'pink', 'lime',  'brown', 
-    'greenyellow', 'tan', 'm'
+    'grey', 'pink', 'lime',  'brown',
 ]
 
 
