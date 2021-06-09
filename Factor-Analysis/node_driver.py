@@ -1,5 +1,8 @@
 from multiprocessing import Process, freeze_support
 from msg.node_msg_handler import NodeMsgHandler
+# 忽略警告訊息
+import warnings
+warnings.filterwarnings("ignore")
 
 
 # 使用 multiprocessing 必須加上

@@ -1,5 +1,7 @@
 import time
 import pathlib
+import requests
+import json
 from multiprocessing import Process, freeze_support
 from utils.config import Config
 from utils.general import General
@@ -7,12 +9,9 @@ from service.calendar import Calendar
 from service.factor import Factor
 from package.my_asset import MyAsset
 from itertools import product
-
-import requests
-import json
-
-# data = range(4), range(3)
-# x = list(product(*data))
+# 忽略警告訊息
+import warnings
+warnings.filterwarnings("ignore")
 
 
 factor_list = [
@@ -28,23 +27,24 @@ factor_list = [
     # ['EPS'], ['ROIC'], ['FCF_OI']
 ]
 factor_list = [
-    ['FCF_P'],
-    # ['EV_EBITDA'],
+    # ['FCF_P'],
+    ['EV_EBITDA'],
 ]
 request = {
     "factor_list": factor_list,
-    "strategy_list": [0, 1],
+    "strategy_list": [1],
     "window_list": [0],
-    "method_list": [0],
-    # "group_list": [1, 2, 3, 4, 5],
+    "method_list": [1],
+    # "group_list": [1, 2, 3],
     # "position_list": [6, 15, 60, 150, 300],
     "group_list": [1],
-    "position_list": [150],
+    "position_list": [6, 15, 60],
 }
 
 # 使用 multiprocessing 必須加上
 if __name__ == "__main__":
     freeze_support()
+
     general = General()
     cfg = Config()
     cal = Calendar('TW')
@@ -62,12 +62,19 @@ if __name__ == "__main__":
         for task in combination:
             factor_str = general.factor_to_string(task[0])
             path = cfg.get_value('path', 'path_to_portfolio_performance') + factor_str
-            file_name = "{}_{}_{}_{}_{}".format(factor_str, task[1], request['n_season'], task[2], task[3])
+            file_name = "{}_{}_{}_{}_{}_{}".format(
+                factor_str,
+                task[1],
+                task[2],
+                task[3],
+                task[4],
+                task[5],
+            )
             file = pathlib.Path("{}/{}.csv".format(path, file_name))
 
             if file.exists():
                 print('file exist!')
-                break
+                continue
 
             else:
 

@@ -18,8 +18,8 @@ if __name__ == "__main__":
     ]
 
     factor_list = [
-        ['FCF_P'], 
-        # ['EV_EBITDA'],
+        # ['FCF_P'], 
+        ['EV_EBITDA'],
         # ['P_B'], 
         # ['P_S'], 
         # ['MOM'],
@@ -39,11 +39,21 @@ if __name__ == "__main__":
         'factor_list': general.factor_list_to_string(factor_list),
         'strategy_list': [1],
         'window_list': [0],
+        'method_list': [5015, 5010, 5005, 5020, 5025],
+        # 'group_list': [1, 2, 3, 4, 5], 
+        'group_list': [1], 
+        'position_list':[6, 15],
+        # 'position_list':[15, 60, 150],
+    }
+    request = {
+        'factor_list': general.factor_list_to_string(factor_list),
+        'strategy_list': [0],
+        'window_list': [0],
         'method_list': [0],
         # 'group_list': [1, 2, 3, 4, 5], 
-        'group_list': [2], 
-        'position_list':[6, 15, 60, 150, 300],
-        # 'position_list':[6, 15],
+        'group_list': [1], 
+        'position_list':[6, 15],
+        # 'position_list':[15, 60, 150],
     }
     analysis.plot_equity_curve(request)
     
@@ -78,10 +88,10 @@ if __name__ == "__main__":
 
     request = {
         'factor': general.factor_list_to_string(factor_list),
-        'strategy': 0,
+        'strategy': 1,
         'window': 0,
         'method': 0,
-        'group': 1, 
+        'group': 5, 
         'position': 6,
     }
     # analysis.plot_profit_bar_chart(request)
@@ -111,13 +121,29 @@ if __name__ == "__main__":
     # 條件查詢績效
     # ======================================================
 
-    request = {
-        'factor': general.factor_list_to_string(factor_list),
-        'strategy': 1,
-        'method': 0,
-    }
+    factor_list = [
+        # ['FCF_P'], 
+        # ['EV_EBITDA'],
+        # ['P_B'], 
+        # ['P_S'], 
+        # ['MOM'],
+        # ['EPS'], 
+        # ['ROIC'], 
+        # ['FCF_OI']
+        # ['EV_EBITDA', 'ROIC'],
+        # ['P_B', 'EPS'],
+        # ['FCF_P', 'MOM'],
+        # ['FCF_OI', 'P_S'],
+    ]
+
+    # request = {
+    #     'factor': general.factor_list_to_string(factor_list),
+    #     'strategy': 1,
+    #     'method': 1,
+    # }
     
     # df = analysis.query_performance_file()
+    # df = df.sort_values(by=['MAR'], ascending=False)
 
     # df = df.loc[
     #     (df['factor'] == request['factor']) &
@@ -129,6 +155,13 @@ if __name__ == "__main__":
 
     # 輸出所有實驗組合績效
     # ======================================================
+
+    factor_list = [
+        ['EV_EBITDA', 'ROIC'], ['P_B', 'EPS'], ['FCF_P', 'MOM'],
+        ['FCF_OI', 'P_S'], ['FCF_P'], ['EV_EBITDA'],
+        ['P_B'], ['P_S'], ['MOM'],
+        ['EPS'], ['ROIC'], ['FCF_OI']
+    ]
 
     request = {
         'factor_list': general.factor_list_to_string(factor_list),

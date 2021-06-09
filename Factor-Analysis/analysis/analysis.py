@@ -221,7 +221,14 @@ class Analysis:
 
         # print(trade_df.sort_values(by=['return'], ascending=False))
 
-        trade_df.plot.bar(y='return', figsize=(20, 8))
+        ax = trade_df.plot.bar(y='return', figsize=(20, 8))
+
+        ax.set_xlabel("Trade Series Number")
+        ax.set_ylabel("Return[%]")
+
+        ax.set_title(file_name)
+        print(file_name)
+
         plt.show()
     
     def plot_linear_regression(self, request):

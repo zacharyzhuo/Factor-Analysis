@@ -58,7 +58,7 @@ class BacktestHandler:
             # 因為 backtesting 不能在第一天跟最後一天交易 所以必須往前後多加一天
             start_date = self._cal.get_trade_date(self._period[0], -2, 'd')
 
-        # 布林通道策略
+        # 動態換股策略
         elif self.window_config['strategy'] == 1:
             # 因為要算均線所以要往前多抓幾天
             start_date = self._cal.get_trade_date(self._period[0], (1+max_ma)*-1, 'd')
@@ -127,7 +127,7 @@ class BacktestHandler:
                         'trade_df': result['_trades'],
                     }}
 
-                # 布林通道策略
+                # 動態換股策略
                 elif self.window_config['strategy'] == 1:
                     # 是否為最佳化找參數
                     if if_optimize:
@@ -174,9 +174,9 @@ class BacktestHandler:
                         'trade_df': result['_trades'],
                     }}
             except Exception as e:
-                print("[ticker {}]: <{} to {}> {}".format(
-                    ticker, self._period[0], self._period[1], e)
-                )
+                # print("[ticker {}]: <{} to {}> {}".format(
+                #     ticker, self._period[0], self._period[1], e)
+                # )
                 return {ticker: {
                     'strategy': {
                         'ma_len': None,
@@ -251,7 +251,7 @@ class BacktestHandler:
                 self.window_config, self._profit_table, trade_dict
             ).get_weight(method=method)
 
-        # 布林通道動態換股
+        # 動態換股
         elif self.window_config['strategy'] == 1:
             self._weight_table, cash_flow, reallocated_date = DynamicTarget(
                 self.window_config, self._profit_table, trade_dict
