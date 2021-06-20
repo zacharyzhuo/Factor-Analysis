@@ -31,6 +31,11 @@ class TaskApi(Resource):
                     # B&H 排除0之外的窗格 排除等權重之外的方法
                     if combi[2] != 0 or combi[3] != 0: 
                         continue
+                
+                # if combi[2] == 1 or combi[2] == 2:
+                #     if len(combi[0]) != 1 and combi[0][0] != "EV_EBITDA":
+                #         continue
+
                 output.append(combi)
 
             return jsonify({"result": output})

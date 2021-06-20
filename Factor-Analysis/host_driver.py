@@ -10,13 +10,13 @@ factor_list = [
     # ['P_B'], ['P_S'], ['MOM'],
     # ['EPS'], ['ROIC'], ['FCF_OI']
 
-    ['EV_EBITDA']
+    ['FCF_OI', 'P_S']
 ]
 request = {
     "factor_list": factor_list,
     "strategy_list": [1],
-    "window_list": [2],
-    "method_list": [0, 1],
+    "window_list": [1, 2],
+    "method_list": [0],
     "group_list": [1, 2, 3, 4, 5],
     "position_list": [6, 15, 60, 150, 300],
 }
